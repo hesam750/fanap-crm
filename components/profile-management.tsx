@@ -156,7 +156,7 @@ export function ProfileManagement({ user, onUserUpdate }: ProfileManagementProps
       </div>
 
       <Tabs defaultValue="profile" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-3 text-xs sm:text-sm">
           <TabsTrigger value="profile">اطلاعات شخصی</TabsTrigger>
           <TabsTrigger value="security">امنیت</TabsTrigger>
           <TabsTrigger value="activity">فعالیت‌ها</TabsTrigger>
@@ -165,7 +165,7 @@ export function ProfileManagement({ user, onUserUpdate }: ProfileManagementProps
         <TabsContent value="profile" className="space-y-6">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-3">
                 <CardTitle className="flex items-center gap-2">
                   <User className="h-5 w-5" />
                   اطلاعات شخصی
@@ -196,7 +196,7 @@ export function ProfileManagement({ user, onUserUpdate }: ProfileManagementProps
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-6 flex-wrap">
                 <Avatar className="h-20 w-20">
                   <AvatarImage src="/placeholder.svg" />
                   <AvatarFallback className="text-lg">
@@ -216,7 +216,7 @@ export function ProfileManagement({ user, onUserUpdate }: ProfileManagementProps
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>نام کامل</Label>
                   <Input
@@ -244,7 +244,7 @@ export function ProfileManagement({ user, onUserUpdate }: ProfileManagementProps
               </div>
 
               {isEditing && (
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-col sm:flex-row">
                   <Button onClick={handleSaveProfile} className="flex-1">
                     <Save className="h-4 w-4 ml-2" />
                     ذخیره تغییرات
@@ -254,7 +254,7 @@ export function ProfileManagement({ user, onUserUpdate }: ProfileManagementProps
 
               <div>
                 <Label>دسترسی‌ها</Label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
                   {user.permissions.includes("*") ? (
                     <Badge variant="destructive">دسترسی کامل</Badge>
                   ) : (
@@ -279,29 +279,31 @@ export function ProfileManagement({ user, onUserUpdate }: ProfileManagementProps
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <Label>رمز عبور فعلی</Label>
-                <Input
-                  type="password"
-                  value={passwordData.currentPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>رمز عبور جدید</Label>
-                <Input
-                  type="password"
-                  value={passwordData.newPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>تأیید رمز عبور جدید</Label>
-                <Input
-                  type="password"
-                  value={passwordData.confirmPassword}
-                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label>رمز عبور فعلی</Label>
+                  <Input
+                    type="password"
+                    value={passwordData.currentPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label>رمز عبور جدید</Label>
+                  <Input
+                    type="password"
+                    value={passwordData.newPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label>تأیید رمز عبور جدید</Label>
+                  <Input
+                    type="password"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  />
+                </div>
               </div>
               <Button onClick={handleChangePassword} className="w-full">
                 تغییر رمز عبور
@@ -363,38 +365,40 @@ export function ProfileManagement({ user, onUserUpdate }: ProfileManagementProps
               {loading ? (
                 <div className="text-center py-8">در حال بارگذاری...</div>
               ) : userTasks.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>عنوان وظیفه</TableHead>
-                      <TableHead>وضعیت</TableHead>
-                      <TableHead>اولویت</TableHead>
-                      <TableHead>تاریخ ایجاد</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {userTasks.slice(0, 10).map((task) => (
-                      <TableRow key={task.id}>
-                        <TableCell className="font-medium">{task.title}</TableCell>
-                        <TableCell>
-                          <Badge variant={getTaskStatusColor(task.status)}>{getTaskStatusText(task.status)}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={task.priority === "critical" ? "destructive" : "outline"}>
-                            {task.priority === "critical"
-                              ? "بحرانی"
-                              : task.priority === "high"
-                                ? "بالا"
-                                : task.priority === "medium"
-                                  ? "متوسط"
-                                  : "پایین"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{new Date(task.createdAt).toLocaleDateString("fa-IR")}</TableCell>
+                <div className="w-full overflow-x-auto">
+                  <Table className="min-w-[600px]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>عنوان وظیفه</TableHead>
+                        <TableHead>وضعیت</TableHead>
+                        <TableHead>اولویت</TableHead>
+                        <TableHead>تاریخ ایجاد</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {userTasks.slice(0, 10).map((task) => (
+                        <TableRow key={task.id}>
+                          <TableCell className="font-medium">{task.title}</TableCell>
+                          <TableCell>
+                            <Badge variant={getTaskStatusColor(task.status)}>{getTaskStatusText(task.status)}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={task.priority === "critical" ? "destructive" : "outline"}>
+                              {task.priority === "critical"
+                                ? "بحرانی"
+                                : task.priority === "high"
+                                  ? "بالا"
+                                  : task.priority === "medium"
+                                    ? "متوسط"
+                                    : "پایین"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{new Date(task.createdAt).toLocaleDateString("fa-IR")}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               ) : (
                 <div className="text-center text-muted-foreground py-8">هیچ فعالیتی یافت نشد</div>
               )}

@@ -80,7 +80,7 @@ export function DashboardHeader({ user, alertCount, onLogout }: DashboardHeaderP
                 <User className="h-4 w-4" />
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
+            <DialogContent className="max-w-4xl w-[calc(100vw-1rem)] sm:w-auto h-[100dvh] sm:h-auto rounded-none sm:rounded-lg p-4 sm:p-6 overflow-y-auto top-0 left-0 translate-x-0 translate-y-0 sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2" dir="rtl">
               <DialogHeader>
                 <DialogTitle>پروفایل کاربری</DialogTitle>
               </DialogHeader>
