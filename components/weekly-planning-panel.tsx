@@ -215,16 +215,16 @@ export function WeeklyPlanningPanel({
 
   return (
     <div className="space-y-6" dir="rtl">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 w-full min-w-0">
+        <div className="flex items-center gap-2 flex-1 min-w-0 overflow-hidden">
           <Calendar className="h-6 w-6 text-blue-500" />
-          <h2 className="text-2xl font-bold">برنامه‌ریزی هفتگی</h2>
+          <h2 className="text-2xl font-bold truncate">برنامه‌ریزی هفتگی</h2>
           <Badge variant="outline">تقویم شمسی</Badge>
         </div>
         {canManageTasks && (
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="w-full sm:w-auto whitespace-nowrap shrink-0">
                 <Plus className="h-4 w-4 ml-2" />
                 وظیفه جدید
               </Button>

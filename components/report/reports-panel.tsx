@@ -411,7 +411,7 @@ export function ReportsPanel({ tanks, generators, alerts }: ReportsPanelProps) {
       {/* کنترل‌های گزارش */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 min-w-0">
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
               گزارش‌گیری و تحلیل
@@ -421,408 +421,412 @@ export function ReportsPanel({ tanks, generators, alerts }: ReportsPanelProps) {
                 </span>
               )}
             </CardTitle>
-            <div className="flex flex-wrap items-center gap-2">
-              {/* بازه زمانی */}
-              <Select value={reportPeriod} onValueChange={setReportPeriod}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="6">۶ ساعت گذشته</SelectItem>
-                  <SelectItem value="12">۱۲ ساعت گذشته</SelectItem>
-                  <SelectItem value="24">۲۴ ساعت گذشته</SelectItem>
-                  <SelectItem value="168">هفته گذشته</SelectItem>
-                  <SelectItem value="custom">بازه سفارشی...</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {reportPeriod === "custom" && (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-[260px] justify-start text-left font-normal",
-                        !dateRange && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dateRange?.from ? (
-                        dateRange.to ? (
-                          <span>
-                            {dateRange.from.toLocaleDateString('fa-IR')} تا {dateRange.to.toLocaleDateString('fa-IR')}
-                          </span>
+            {/* Controls container: scrollable on mobile */}
+            <div className="w-full sm:w-auto overflow-x-auto sm:overflow-visible -mx-4 sm:mx-0 px-4">
+              <div className="flex items-center gap-2 w-max">
+                {/* بازه زمانی */}
+                <Select value={reportPeriod} onValueChange={setReportPeriod}>
+                  <SelectTrigger className="w-full sm:w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="6">۶ ساعت گذشته</SelectItem>
+                    <SelectItem value="12">۱۲ ساعت گذشته</SelectItem>
+                    <SelectItem value="24">۲۴ ساعت گذشته</SelectItem>
+                    <SelectItem value="168">هفته گذشته</SelectItem>
+                    <SelectItem value="custom">بازه سفارشی...</SelectItem>
+                  </SelectContent>
+                </Select>
+    
+                {reportPeriod === "custom" && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-[260px] justify-start text-left font-normal whitespace-nowrap",
+                          !dateRange && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateRange?.from ? (
+                          dateRange.to ? (
+                            <span>
+                              {dateRange.from.toLocaleDateString('fa-IR')} تا {dateRange.to.toLocaleDateString('fa-IR')}
+                            </span>
+                          ) : (
+                            <span>
+                              {dateRange.from.toLocaleDateString('fa-IR')}
+                            </span>
+                          )
                         ) : (
-                          <span>
-                            {dateRange.from.toLocaleDateString('fa-IR')}
-                          </span>
-                        )
-                      ) : (
-                        <span>انتخاب بازه تاریخ</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="end">
-                    <UICalendar
-                      mode="range"
-                      selected={dateRange}
-                      onSelect={setDateRange}
-                      numberOfMonths={2}
-                    />
-                    <div className="flex items-center justify-end gap-2 p-3 border-t">
-                      <Button variant="ghost" onClick={() => setDateRange(undefined)}>پاک کردن</Button>
-                      <Button onClick={() => loadReportData()}>اعمال</Button>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              )}
-
-              {/* نوع گزارش */}
-              <Select value={reportType} onValueChange={(v) => setReportType(v as any)}>
-                <SelectTrigger className="w-36">
-                  <SelectValue placeholder="نوع گزارش" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="summary">خلاصه</SelectItem>
-                  <SelectItem value="analytics">تحلیلی</SelectItem>
-                  <SelectItem value="export">خروجی داده</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* فرمت */}
-              <Select value={reportFormat} onValueChange={(v) => setReportFormat(v as any)}>
-                <SelectTrigger className="w-28">
-                  <SelectValue placeholder="فرمت" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="json">JSON</SelectItem>
-                  <SelectItem value="csv">CSV</SelectItem>
-                  <SelectItem value="pdf">PDF</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Button variant="outline" onClick={() => loadReportData()}>
-                <RefreshCw className="h-4 w-4 mr-2" /> بروزرسانی
-              </Button>
-              <Button onClick={() => handleExportReport("json")}>
-                <Download className="h-4 w-4 mr-2" /> خروجی JSON
-              </Button>
-              <Button onClick={handleGenerateServerReport} variant="secondary">
-                <FileText className="h-4 w-4 mr-2" /> تولید گزارش
-              </Button>
+                          <span>انتخاب بازه تاریخ</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                      <UICalendar
+                        mode="range"
+                        selected={dateRange}
+                        onSelect={setDateRange}
+                        numberOfMonths={2}
+                      />
+                      <div className="flex items-center justify-end gap-2 p-3 border-t">
+                        <Button variant="ghost" onClick={() => setDateRange(undefined)}>پاک کردن</Button>
+                        <Button onClick={() => loadReportData()}>اعمال</Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                )}
+    
+                {/* نوع گزارش */}
+                <Select value={reportType} onValueChange={(v) => setReportType(v as any)}>
+                  <SelectTrigger className="w-36">
+                    <SelectValue placeholder="نوع گزارش" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="summary">خلاصه</SelectItem>
+                    <SelectItem value="analytics">تحلیلی</SelectItem>
+                    <SelectItem value="export">خروجی داده</SelectItem>
+                  </SelectContent>
+                </Select>
+    
+                {/* فرمت */}
+                <Select value={reportFormat} onValueChange={(v) => setReportFormat(v as any)}>
+                  <SelectTrigger className="w-28">
+                    <SelectValue placeholder="فرمت" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="json">JSON</SelectItem>
+                    <SelectItem value="csv">CSV</SelectItem>
+                    <SelectItem value="pdf">PDF</SelectItem>
+                  </SelectContent>
+                </Select>
+    
+                <Button variant="outline" onClick={() => loadReportData()} className="whitespace-nowrap">
+                  <RefreshCw className="h-4 w-4 mr-2" /> بروزرسانی
+                </Button>
+                <Button onClick={() => handleExportReport("json")} className="whitespace-nowrap">
+                  <Download className="h-4 w-4 mr-2" /> خروجی JSON
+                </Button>
+                <Button onClick={handleGenerateServerReport} variant="secondary" className="whitespace-nowrap">
+                  <FileText className="h-4 w-4 mr-2" /> تولید گزارش
+                </Button>
+              </div>
             </div>
-          </div>
-          <CardDescription>
-            تحلیل روندها و پیش‌بینی مصرف برای مدیریت بهتر منابع
-          </CardDescription>
-        </CardHeader>
-      </Card>
+            {/* close header flex container before description */}
+            </div>
+            <CardDescription>
+              تحلیل روندها و پیش‌بینی مصرف برای مدیریت بهتر منابع
+            </CardDescription>
+          </CardHeader>
+        </Card>
 
-      {/* لیست گزارش‌های تولیدشده اخیر */}
-      {generatedReports.length > 0 && (
+        {/* لیست گزارش‌های تولیدشده اخیر */}
+        {generatedReports.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>گزارش‌های تولیدشده</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>عنوان</TableHead>
+                      <TableHead>نوع</TableHead>
+                      <TableHead>بازه زمانی</TableHead>
+                      <TableHead>فرمت</TableHead>
+                      <TableHead>تاریخ تولید</TableHead>
+                      <TableHead>وضعیت</TableHead>
+                      <TableHead className="text-left">عملیات</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {generatedReports.map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell className="font-medium">{r.title}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {r.type === 'summary' ? 'خلاصه' : r.type === 'analytics' ? 'تحلیلی' : 'خروجی'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{r.timeframeLabel}</TableCell>
+                        <TableCell><Badge variant="secondary">{r.format.toUpperCase()}</Badge></TableCell>
+                        <TableCell>{new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short', timeStyle: 'short' }).format(r.generatedAt)}</TableCell>
+                        <TableCell>
+                          <Badge variant={r.status === 'completed' ? 'success' : r.status === 'pending' ? 'secondary' : 'destructive'}>
+                            {r.status === 'completed' ? 'تکمیل' : r.status === 'pending' ? 'در صف' : 'ناموفق'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="flex gap-2 justify-end">
+                          <Button variant="ghost" size="icon" disabled={!r.downloadUrl || r.status !== 'completed'} onClick={() => {
+                            if (!r.downloadUrl) return
+                            const a = document.createElement('a')
+                            a.href = r.downloadUrl
+                            a.download = ''
+                            document.body.appendChild(a)
+                            a.click()
+                            document.body.removeChild(a)
+                          }}>
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" disabled={!r.downloadUrl || r.status !== 'completed'} onClick={async () => {
+                            if (!r.downloadUrl) return
+                            try {
+                              await navigator.clipboard.writeText(window.location.origin + r.downloadUrl)
+                              toast({ title: 'کپی شد', description: 'لینک دانلود در کلیپ‌بورد کپی شد' })
+                            } catch {
+                              toast({ title: 'خطا', description: 'کپی لینک ناموفق بود', variant: 'destructive' })
+                            }
+                          }}>
+                            <CopyIcon className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" disabled={!r.downloadUrl || r.status !== 'completed'} onClick={() => {
+                            if (!r.downloadUrl) return
+                            window.open(r.downloadUrl, '_blank')
+                          }}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* آمار کلی */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>مخازن</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="text-3xl font-bold">{tanks.length}</div>
+                <Badge variant="secondary">فعال</Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>ژنراتورها</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="text-3xl font-bold">{generators.length}</div>
+                <Badge variant="secondary">فعال</Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>هشدارها</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="text-3xl font-bold">{alerts.length}</div>
+                <Badge variant="destructive">کل</Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* جدول تاریخچه */}
         <Card>
           <CardHeader>
-            <CardTitle>گزارش‌های تولیدشده</CardTitle>
+            <CardTitle>تاریخچه داده‌ها</CardTitle>
+            <CardDescription>
+              جدیدترین ۱۵ رکورد از تاریخچه داده‌ها
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>عنوان</TableHead>
                     <TableHead>نوع</TableHead>
-                    <TableHead>بازه زمانی</TableHead>
-                    <TableHead>فرمت</TableHead>
-                    <TableHead>تاریخ تولید</TableHead>
-                    <TableHead>وضعیت</TableHead>
-                    <TableHead className="text-left">عملیات</TableHead>
+                    <TableHead>نام</TableHead>
+                    <TableHead>سطح</TableHead>
+                    <TableHead>زمان</TableHead>
+                    <TableHead>ثبت‌کننده</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {generatedReports.map((r) => (
-                    <TableRow key={r.id}>
-                      <TableCell className="font-medium">{r.title}</TableCell>
+                  {paginatedRecords.map((record, index) => (
+                    <TableRow key={index}>
                       <TableCell>
-                        <Badge variant="outline">
-                          {r.type === 'summary' ? 'خلاصه' : r.type === 'analytics' ? 'تحلیلی' : 'خروجی'}
-                        </Badge>
+                        {record.tankId ? (
+                          <Badge variant="secondary">مخزن</Badge>
+                        ) : (
+                          <Badge variant="outline">ژنراتور</Badge>
+                        )}
                       </TableCell>
-                      <TableCell>{r.timeframeLabel}</TableCell>
-                      <TableCell><Badge variant="secondary">{r.format.toUpperCase()}</Badge></TableCell>
-                      <TableCell>{new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short', timeStyle: 'short' }).format(r.generatedAt)}</TableCell>
+                      <TableCell>{record.recordedBy || record.tankId || record.generatorId}</TableCell>
                       <TableCell>
-                        <Badge variant={r.status === 'completed' ? 'success' : r.status === 'pending' ? 'secondary' : 'destructive'}>
-                          {r.status === 'completed' ? 'تکمیل' : r.status === 'pending' ? 'در صف' : 'ناموفق'}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <div className="w-24 bg-gray-200 rounded-full h-2 overflow-hidden">
+                            <div
+                              className={`h-2 rounded-full ${record.level < 20 ? 'bg-red-500' : record.level < 50 ? 'bg-yellow-500' : 'bg-green-500'}`}
+                              style={{ width: `${record.level}%` }}
+                            ></div>
+                          </div>
+                          <span>{record.level}%</span>
+                        </div>
                       </TableCell>
-                      <TableCell className="flex gap-2 justify-end">
-                        <Button variant="ghost" size="icon" disabled={!r.downloadUrl || r.status !== 'completed'} onClick={() => {
-                          if (!r.downloadUrl) return
-                          const a = document.createElement('a')
-                          a.href = r.downloadUrl
-                          a.download = ''
-                          document.body.appendChild(a)
-                          a.click()
-                          document.body.removeChild(a)
-                        }}>
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" disabled={!r.downloadUrl || r.status !== 'completed'} onClick={async () => {
-                          if (!r.downloadUrl) return
-                          try {
-                            await navigator.clipboard.writeText(window.location.origin + r.downloadUrl)
-                            toast({ title: 'کپی شد', description: 'لینک دانلود در کلیپ‌بورد کپی شد' })
-                          } catch {
-                            toast({ title: 'خطا', description: 'کپی لینک ناموفق بود', variant: 'destructive' })
-                          }
-                        }}>
-                          <CopyIcon className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" disabled={!r.downloadUrl || r.status !== 'completed'} onClick={() => {
-                          if (!r.downloadUrl) return
-                          window.open(r.downloadUrl, '_blank')
-                        }}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                      <TableCell>
+                        {new Date(record.timestamp).toLocaleString('fa-IR')}
                       </TableCell>
+                      <TableCell>{record.recordedBy || 'سیستم'}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* آمار کلی */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>مخازن</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="text-3xl font-bold">{tanks.length}</div>
-              <Badge variant="secondary">فعال</Badge>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>ژنراتورها</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div className="text-3xl font-bold">{generators.length}</div>
-              <Badge variant="secondary">فعال</Badge>
+              {/* Pagination */}
+              <div className="flex justify-end items-center gap-2 mt-4">
+                <Button
+                  variant="outline"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                >
+                  قبلی
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  صفحه {currentPage} از {Math.ceil(historyRecords.length / recordsPerPage) || 1}
+                </span>
+                <Button
+                  variant="outline"
+                  disabled={currentPage * recordsPerPage >= historyRecords.length}
+                  onClick={() => setCurrentPage((p) => p + 1)}
+                >
+                  بعدی
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
 
+        {/* تحلیل روندها */}
         <Card>
           <CardHeader>
-            <CardTitle>هشدارها</CardTitle>
+            <CardTitle>تحلیل روندها</CardTitle>
           </CardHeader>
           <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {tanks.map((tank) => (
+                <div key={tank.id} className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="font-medium">{tank.name}</div>
+                    <div className="flex items-center gap-2">
+                      {getTrendIcon(trends.get(tank.id))}
+                      <span className="text-sm text-muted-foreground">
+                        {trends.get(tank.id)?.trend || 'نامشخص'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    تغییرات: {trends.get(tank.id)?.changeRate?.toFixed(2) || 0}%
+                  </div>
+                </div>
+              ))}
+
+              {generators.map((gen) => (
+                <div key={gen.id} className="border rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="font-medium">{gen.name}</div>
+                    <div className="flex items-center gap-2">
+                      {getTrendIcon(trends.get(gen.id))}
+                      <span className="text-sm text-muted-foreground">
+                        {trends.get(gen.id)?.trend || 'نامشخص'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    تغییرات: {trends.get(gen.id)?.changeRate?.toFixed(2) || 0}%
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* لیست هشدارها */}
+        <Card>
+          <CardHeader>
+            <CardTitle>هشدارهای اخیر</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {alerts.slice(0, 10).map((alert) => (
+                <div key={alert.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    <div>
+                      <div className="font-medium">{alert.type}</div>
+                      <div className="text-sm text-muted-foreground">{alert.message}</div>
+                    </div>
+                  </div>
+                  <Badge variant={alert.severity === 'high' ? 'destructive' : 'secondary'}>
+                    {alert.severity}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+        {/* Activity Logs */}
+        <Card>
+          <CardHeader>
             <div className="flex items-center justify-between">
-              <div className="text-3xl font-bold">{alerts.length}</div>
-              <Badge variant="destructive">کل</Badge>
+              <CardTitle>آخرین فعالیت‌ها</CardTitle>
+              <div className="text-sm text-muted-foreground">{logsTotal} مورد ثبت شده</div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {logsLoading ? (
+              <div className="py-6 text-center text-muted-foreground">در حال بارگذاری...</div>
+            ) : activityLogs.length === 0 ? (
+              <div className="py-6 text-center text-muted-foreground">فعلاً فعالیتی ثبت نشده است</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>زمان</TableHead>
+                      <TableHead>نوع</TableHead>
+                      <TableHead>توضیح</TableHead>
+                      <TableHead>کاربر</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {activityLogs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell>
+                          {new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(log.createdAt))}
+                        </TableCell>
+                        <TableCell><Badge variant="outline">{log.type}</Badge></TableCell>
+                        <TableCell>{log.description}</TableCell>
+                        <TableCell>{log.userName || log.userId || '-'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+            <div className="flex justify-end mt-4">
+              <Button variant="secondary" onClick={loadActivityLogs}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                تازه‌سازی
+              </Button>
             </div>
           </CardContent>
         </Card>
       </div>
-
-      {/* جدول تاریخچه */}
-      <Card>
-        <CardHeader>
-          <CardTitle>تاریخچه داده‌ها</CardTitle>
-          <CardDescription>
-            جدیدترین ۱۵ رکورد از تاریخچه داده‌ها
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>نوع</TableHead>
-                  <TableHead>نام</TableHead>
-                  <TableHead>سطح</TableHead>
-                  <TableHead>زمان</TableHead>
-                  <TableHead>ثبت‌کننده</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedRecords.map((record, index) => (
-                  <TableRow key={index}>
-                    <TableCell>
-                      {record.tankId ? (
-                        <Badge variant="secondary">مخزن</Badge>
-                      ) : (
-                        <Badge variant="outline">ژنراتور</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>{record.recordedBy || record.tankId || record.generatorId}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="w-24 bg-gray-200 rounded-full h-2 overflow-hidden">
-                          <div
-                            className={`h-2 rounded-full ${record.level < 20 ? 'bg-red-500' : record.level < 50 ? 'bg-yellow-500' : 'bg-green-500'}`}
-                            style={{ width: `${record.level}%` }}
-                          ></div>
-                        </div>
-                        <span>{record.level}%</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(record.timestamp).toLocaleString('fa-IR')}
-                    </TableCell>
-                    <TableCell>{record.recordedBy || 'سیستم'}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-
-            {/* Pagination */}
-            <div className="flex justify-end items-center gap-2 mt-4">
-              <Button
-                variant="outline"
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              >
-                قبلی
-              </Button>
-              <span className="text-sm text-muted-foreground">
-                صفحه {currentPage} از {Math.ceil(historyRecords.length / recordsPerPage) || 1}
-              </span>
-              <Button
-                variant="outline"
-                disabled={currentPage * recordsPerPage >= historyRecords.length}
-                onClick={() => setCurrentPage((p) => p + 1)}
-              >
-                بعدی
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* تحلیل روندها */}
-      <Card>
-        <CardHeader>
-          <CardTitle>تحلیل روندها</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {tanks.map((tank) => (
-              <div key={tank.id} className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="font-medium">{tank.name}</div>
-                  <div className="flex items-center gap-2">
-                    {getTrendIcon(trends.get(tank.id))}
-                    <span className="text-sm text-muted-foreground">
-                      {trends.get(tank.id)?.trend || 'نامشخص'}
-                    </span>
-                  </div>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  تغییرات: {trends.get(tank.id)?.changeRate?.toFixed(2) || 0}%
-                </div>
-              </div>
-            ))}
-
-            {generators.map((gen) => (
-              <div key={gen.id} className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="font-medium">{gen.name}</div>
-                  <div className="flex items-center gap-2">
-                    {getTrendIcon(trends.get(gen.id))}
-                    <span className="text-sm text-muted-foreground">
-                      {trends.get(gen.id)?.trend || 'نامشخص'}
-                    </span>
-                  </div>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  تغییرات: {trends.get(gen.id)?.changeRate?.toFixed(2) || 0}%
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* لیست هشدارها */}
-      <Card>
-        <CardHeader>
-          <CardTitle>هشدارهای اخیر</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {alerts.slice(0, 10).map((alert) => (
-              <div key={alert.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-500" />
-                  <div>
-                    <div className="font-medium">{alert.type}</div>
-                    <div className="text-sm text-muted-foreground">{alert.message}</div>
-                  </div>
-                </div>
-                <Badge variant={alert.severity === 'high' ? 'destructive' : 'secondary'}>
-                  {alert.severity}
-                </Badge>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-      {/* Activity Logs */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>آخرین فعالیت‌ها</CardTitle>
-            <div className="text-sm text-muted-foreground">{logsTotal} مورد ثبت شده</div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {logsLoading ? (
-            <div className="py-6 text-center text-muted-foreground">در حال بارگذاری...</div>
-          ) : activityLogs.length === 0 ? (
-            <div className="py-6 text-center text-muted-foreground">فعلاً فعالیتی ثبت نشده است</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>زمان</TableHead>
-                    <TableHead>نوع</TableHead>
-                    <TableHead>توضیح</TableHead>
-                    <TableHead>کاربر</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {activityLogs.map((log) => (
-                    <TableRow key={log.id}>
-                      <TableCell>
-                        {new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(log.createdAt))}
-                      </TableCell>
-                      <TableCell><Badge variant="outline">{log.type}</Badge></TableCell>
-                      <TableCell>{log.description}</TableCell>
-                      <TableCell>{log.userName || log.userId || '-'}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-          <div className="flex justify-end mt-4">
-            <Button variant="secondary" onClick={loadActivityLogs}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              تازه‌سازی
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
+    )
 }

@@ -14,8 +14,8 @@ import { Alert, Generator, Tank, Task } from "@/lib/types"
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, RadialBar, RadialBarChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ManagementKPIs } from "@/components/management-kpis"
-
-
+import { useState, useEffect } from "react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 type Props = {
   tanks: Tank[]
@@ -183,17 +183,33 @@ const Analytics = ({ tanks, alerts, generators, tasks }: Props) => {
     }))
     .map((d) => ({ ...d, fill: d.fill }))
 
+  // Add controlled tabs + responsive legend state
+  const [innerTab, setInnerTab] = useState("charts")
+  const isMd = useIsMd()
+
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="charts" className="w-full">
-        <TabsList className="mb-4">
+      {/* Mobile Select for tabs */}
+      <Tabs value={innerTab} onValueChange={setInnerTab} className="w-full">
+        <div className="p-3 md:hidden">
+          <Select value={innerTab} onValueChange={setInnerTab}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="انتخاب بخش" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="charts">نمودارها و آمار</SelectItem>
+              <SelectItem value="kpis">شاخص‌های مدیریتی</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <TabsList className="hidden md:flex mb-4">
           <TabsTrigger value="charts">نمودارها و آمار</TabsTrigger>
           <TabsTrigger value="kpis">شاخص‌های مدیریتی</TabsTrigger>
         </TabsList>
         
         <TabsContent value="charts" className="space-y-6">
           {/* Enhanced Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 min-w-0">
         <Card className="border-l-4 border-l-blue-500">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-blue-700">کل مخازن</CardTitle>
@@ -244,7 +260,7 @@ const Analytics = ({ tanks, alerts, generators, tasks }: Props) => {
       </div>
 
       {/* Enhanced Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-w-0">
    <Card>
   <CardHeader>
     <CardTitle>بررسی سطح مخازن</CardTitle>
@@ -385,6 +401,7 @@ const Analytics = ({ tanks, alerts, generators, tasks }: Props) => {
   </CardContent>
 </Card>
 
+
 <Card>
   <CardHeader>
     <CardTitle>عملکرد ژنراتور</CardTitle>
@@ -415,7 +432,7 @@ const Analytics = ({ tanks, alerts, generators, tasks }: Props) => {
             />
           }
         />
-        <ChartLegend content={<ChartLegendContent />} />
+        {isMd && <ChartLegend content={<ChartLegendContent />} />}
         <Bar dataKey="efficiency" fill="var(--color-efficiency)" radius={[4, 4, 0, 0]} />
         <Bar dataKey="utilization" fill="var(--color-utilization)" radius={[4, 4, 0, 0]} />
       </BarChart>
@@ -528,16 +545,36 @@ const Analytics = ({ tanks, alerts, generators, tasks }: Props) => {
   </CardContent>
 </Card>
 
-      {/* Alerts List and Additional Content remains unchanged */}
-        </div>
-      </TabsContent>
-      
-      <TabsContent value="kpis">
-        <ManagementKPIs />
-      </TabsContent>
-    </Tabs>
-  </div>
-  )
+      </div>
+    </TabsContent>
+    <TabsContent value="kpis" className="space-y-6">
+      <ManagementKPIs />
+    </TabsContent>
+  </Tabs>
+</div>
+)
 }
 
 export default Analytics
+
+function useIsMd() {
+  const [isMd, setIsMd] = useState(false)
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 768px)")
+    const handler = (e: MediaQueryListEvent) => setIsMd(e.matches)
+    setIsMd(mql.matches)
+    if ((mql as any).addEventListener) {
+      (mql as any).addEventListener("change", handler)
+    } else if ((mql as any).addListener) {
+      (mql as any).addListener(handler)
+    }
+    return () => {
+      if ((mql as any).removeEventListener) {
+        (mql as any).removeEventListener("change", handler)
+      } else if ((mql as any).removeListener) {
+        (mql as any).removeListener(handler)
+      }
+    }
+  }, [])
+  return isMd
+}

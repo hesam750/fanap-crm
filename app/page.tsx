@@ -20,6 +20,7 @@ import { GeneratorCard } from "@/components/generators/generator-card"
 import { AlertsPanel } from "@/components/alerts-panel"
 import Analytics from "@/components/analytics"
 import { WeeklyPlanningPanel } from "@/components/weekly-planning-panel"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null)
@@ -351,12 +352,36 @@ export default function Home() {
 
         <Card className="shadow-sm border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            {/* Mobile tab switcher */}
+            <div className="p-3 md:hidden">
+              <Select value={activeTab} onValueChange={setActiveTab}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="انتخاب بخش" />
+                </SelectTrigger>
+                <SelectContent>
+                  {auth.canViewDashboard() && (
+                    <SelectItem value="dashboard">داشبورد</SelectItem>
+                  )}
+                  {auth.canViewAnalytics() && (
+                    <SelectItem value="analytics">تحلیل‌ها</SelectItem>
+                  )}
+                  {auth.canViewReports() && (
+                    <SelectItem value="reports">گزارش‌ها</SelectItem>
+                  )}
+                  {(auth.canManageTasks() || auth.hasPermission("view_assigned_tasks")) && (
+                    <SelectItem value="planning">برنامه‌ریزی هفتگی</SelectItem>
+                  )}
+                  <SelectItem value="alerts">هشدارها</SelectItem>
+                  {auth.isSuperAdmin() && (
+                    <SelectItem value="admin">مدیریت</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="border-b bg-muted/30 rounded-t-lg">
               <TabsList
-                className="grid w-full h-auto p-1 bg-transparent"
-                style={{
-                  gridTemplateColumns: auth.isSuperAdmin() ? "repeat(7, 1fr)" : "repeat(6, 1fr)",
-                }}
+                className="hidden md:flex w-full h-auto p-1 bg-transparent overflow-x-auto"
               >
                 {auth.canViewDashboard() && (
                   <TabsTrigger
