@@ -1,0 +1,238 @@
+// import type { User, Tank, Generator, Task, Alert } from "./types"
+
+// // Mock users
+// export const users: User[] = [
+//   {
+//     id: "0",
+//     name: "مدیر کل سیستم",
+//     role: "super-admin",
+//     email: "root@system.com",
+//     isActive: true,
+//     permissions: ["*"], // Full access
+//     createdAt: new Date(),
+//     lastLogin: new Date(),
+//   },
+//   {
+//     id: "1",
+//     name: "حسین کارجو",
+//     role: "manager",
+//     email: "manager@company.com",
+//     isActive: true,
+//     permissions: [
+//       "view-dashboard",
+//       "view-analytics",
+//       "view-reports",
+//       "manage-tasks",
+//       "assign-tasks",
+//       "view-alerts",
+//       "acknowledge-alerts",
+//       "manage-operators",
+//     ],
+//     createdAt: new Date(),
+//     lastLogin: new Date(),
+//   },
+//   {
+//     id: "2",
+//     name: "محمد بیننده",
+//     role: "operator",
+//     email: "operator1@company.com",
+//     isActive: true,
+//     permissions: [
+//       "view-dashboard",
+//       "update-tank-levels",
+//       "update-generator-levels",
+//       "complete-tasks",
+//       "view-assigned-tasks",
+//       "add-readings",
+//     ],
+//     createdAt: new Date(),
+//     lastLogin: new Date(),
+//   },
+//   {
+//     id: "3",
+//     name: "سید محمد طاهری",
+//     role: "operator",
+//     email: "operator2@company.com",
+//     isActive: true,
+//     permissions: [
+//       "view-dashboard",
+//       "update-tank-levels",
+//       "update-generator-levels",
+//       "complete-tasks",
+//       "view-assigned-tasks",
+//       "add-readings",
+//     ],
+//     createdAt: new Date(),
+//     lastLogin: new Date(),
+//   },
+//   {
+//     id: "4",
+//     name: "علی رضایی",
+//     role: "supervisor",
+//     email: "supervisor@company.com",
+//     isActive: true,
+//     permissions: ["view-dashboard", "view-analytics", "view-reports", "view-all-tasks"],
+//     createdAt: new Date(),
+//     lastLogin: new Date(),
+//   },
+// ]
+
+// // Mock tanks with various capacities
+// export const tanks: Tank[] = [
+//   {
+//     id: "t1",
+//     name: "مخزن سوخت اصلی ۱",
+//     type: "fuel",
+//     capacity: 5000,
+//     currentLevel: 75,
+//     location: "ساختمان A",
+//     lastUpdated: new Date(),
+//   },
+//   {
+//     id: "t2",
+//     name: "مخزن سوخت اصلی ۲",
+//     type: "fuel",
+//     capacity: 5000,
+//     currentLevel: 45,
+//     location: "ساختمان A",
+//     lastUpdated: new Date(),
+//   },
+//   {
+//     id: "t3",
+//     name: "مخزن آب بزرگ",
+//     type: "water",
+//     capacity: 20000,
+//     currentLevel: 85,
+//     location: "پشت بام",
+//     lastUpdated: new Date(),
+//   },
+//   {
+//     id: "t4",
+//     name: "مخزن آب متوسط",
+//     type: "water",
+//     capacity: 10000,
+//     currentLevel: 15,
+//     location: "طبقه ۲",
+//     lastUpdated: new Date(),
+//   },
+//   {
+//     id: "t5",
+//     name: "مخزن آب کوچک ۱",
+//     type: "water",
+//     capacity: 5000,
+//     currentLevel: 60,
+//     location: "طبقه ۱",
+//     lastUpdated: new Date(),
+//   },
+//   {
+//     id: "t6",
+//     name: "مخزن آب کوچک ۲",
+//     type: "water",
+//     capacity: 2000,
+//     currentLevel: 30,
+//     location: "زیرزمین",
+//     lastUpdated: new Date(),
+//   },
+// ]
+
+// // Mock generators (4 generators, 900L each)
+// export const generators: Generator[] = [
+//   {
+//     id: "g1",
+//     name: "ژنراتور ۱",
+//     capacity: 900,
+//     currentLevel: 80,
+//     status: "running",
+//     lastUpdated: new Date(),
+//     location: "",
+//   },
+//   {
+//     id: "g2",
+//     name: "ژنراتور ۲",
+//     capacity: 900,
+//     currentLevel: 65,
+//     status: "running",
+//     lastUpdated: new Date(),
+//     location: "",
+//   },
+//   {
+//     id: "g3",
+//     name: "ژنراتور ۳",
+//     capacity: 900,
+//     currentLevel: 18,
+//     status: "stopped",
+//     lastUpdated: new Date(),
+//     location: "",
+//   },
+//   {
+//     id: "g4",
+//     name: "ژنراتور ۴",
+//     capacity: 900,
+//     currentLevel: 90,
+//     status: "maintenance",
+//     lastUpdated: new Date(),
+//     location: "",
+//   },
+// ]
+
+// // Mock tasks
+// export const tasks: Task[] = [
+//   {
+//     id: "task1",
+//     title: "بررسی سطح سوخت مخزن ۱",
+//     description: "بررسی و ثبت سطح سوخت مخزن اصلی شماره ۱",
+//     assignedTo: "2",
+//     assignedBy: "1",
+//     status: "pending",
+//     priority: "high",
+//     dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000),
+//     createdAt: new Date(),
+//     checklist: [
+//       { id: "c1", text: "بررسی وضعیت ظاهری مخزن", completed: false },
+//       { id: "c2", text: "اندازه‌گیری سطح سوخت", completed: false },
+//       { id: "c3", text: "ثبت اطلاعات در سیستم", completed: false },
+//     ],
+//   },
+//   {
+//     id: "task2",
+//     title: "تعمیر ژنراتور ۳",
+//     description: "انجام تعمیرات دوره‌ای ژنراتور شماره ۳",
+//     assignedTo: "3",
+//     assignedBy: "1",
+//     status: "in-progress",
+//     priority: "critical",
+//     dueDate: new Date(Date.now() + 12 * 60 * 60 * 1000),
+//     createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
+//   },
+// ]
+
+// // Mock alerts
+// export const alerts: Alert[] = [
+//   {
+//     id: "a1",
+//     type: "low-water",
+//     message: "سطح آب مخزن متوسط کمتر از ۲۰٪ است",
+//     severity: "high",
+//     tankId: "t4",
+//     createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+//     acknowledged: false,
+//   },
+//   {
+//     id: "a2",
+//     type: "low-fuel",
+//     message: "سطح سوخت ژنراتور ۳ کمتر از ۲۰٪ است",
+//     severity: "critical",
+//     generatorId: "g3",
+//     createdAt: new Date(Date.now() - 30 * 60 * 1000),
+//     acknowledged: false,
+//   },
+//   {
+//     id: "a3",
+//     type: "maintenance",
+//     message: "ژنراتور ۴ در حالت تعمیر قرار دارد",
+//     severity: "medium",
+//     generatorId: "g4",
+//     createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000),
+//     acknowledged: true,
+//   },
+// ]
