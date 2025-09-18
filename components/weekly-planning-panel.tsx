@@ -229,7 +229,7 @@ export function WeeklyPlanningPanel({
                 وظیفه جدید
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md" dir="rtl">
+            <DialogContent className="sm:max-w-md w-[95vw] sm:w-auto p-4 sm:p-6 max-h-[85vh] overflow-y-auto" dir="rtl">
               <DialogHeader>
                 <DialogTitle>ایجاد وظیفه هفتگی</DialogTitle>
               </DialogHeader>
@@ -253,14 +253,14 @@ export function WeeklyPlanningPanel({
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label>روز هفته</Label>
                     <Select
                       value={newTask.dayOfWeek.toString()}
                       onValueChange={(value) => setNewTask({ ...newTask, dayOfWeek: Number.parseInt(value) })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -281,7 +281,7 @@ export function WeeklyPlanningPanel({
                       value={newTask.timeSlot}
                       onValueChange={(value) => setNewTask({ ...newTask, timeSlot: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -304,7 +304,7 @@ export function WeeklyPlanningPanel({
                     value={newTask.priority}
                     onValueChange={(value: any) => setNewTask({ ...newTask, priority: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -322,7 +322,7 @@ export function WeeklyPlanningPanel({
                     value={newTask.type}
                     onValueChange={(value: any) => setNewTask({ ...newTask, type: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -412,7 +412,7 @@ export function WeeklyPlanningPanel({
           setSelectedTask(null)
           setIsEditing(false)
         }}>
-          <DialogContent className="max-w-md" dir="rtl">
+          <DialogContent className="sm:max-w-md w-[95vw] sm:w-auto p-4 sm:p-6 max-h-[85vh] overflow-y-auto" dir="rtl">
             <DialogHeader>
               <div className="flex items-center justify-between">
                 <DialogTitle>
@@ -450,7 +450,7 @@ export function WeeklyPlanningPanel({
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label>اولویت</Label>
                       <Select
@@ -459,7 +459,7 @@ export function WeeklyPlanningPanel({
                           setEditTask(prev => prev ? {...prev, priority: value} : null)
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -479,7 +479,7 @@ export function WeeklyPlanningPanel({
                           setEditTask(prev => prev ? {...prev, status: value} : null)
                         }
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -500,7 +500,7 @@ export function WeeklyPlanningPanel({
                         setEditTask(prev => prev ? {...prev, type: value} : null)
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -591,7 +591,7 @@ export function WeeklyPlanningPanel({
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label>اولویت</Label>
                       <Badge variant={
@@ -620,7 +620,7 @@ export function WeeklyPlanningPanel({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <Label>نوع</Label>
                       <div className="text-sm">

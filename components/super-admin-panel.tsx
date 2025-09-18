@@ -219,10 +219,10 @@ export function SuperAdminPanel({ currentUser, tanks = [], generators = [], onRe
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Settings className="h-6 w-6 text-blue-500" />
-          <h2 className="text-2xl font-bold">پنل مدیریت سوپر ادمین</h2>
+          <h2 className="text-2xl font-bold truncate">پنل مدیریت سوپر ادمین</h2>
           <Badge variant="destructive">دسترسی کامل</Badge>
         </div>
-        <Button variant="outline" onClick={refreshData} disabled={refreshing}>
+        <Button variant="outline" onClick={refreshData} disabled={refreshing} className="w-full sm:w-auto whitespace-nowrap shrink-0">
           <RefreshCw className={`h-4 w-4 ml-2 ${refreshing ? 'animate-spin' : ''}`} />
           بروزرسانی داده‌ها
         </Button>

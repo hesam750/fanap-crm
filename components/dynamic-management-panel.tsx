@@ -426,8 +426,8 @@ const handleDeleteGenerator = async (generatorId: string, generatorName: string)
             </CardTitle>
             <Dialog open={isAddGeneratorOpen} onOpenChange={setIsAddGeneratorOpen}>
               <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 ml-2" />
+                <Button >
+                  <Plus className="h-4 w-4" />
                   افزودن ژنراتور
                 </Button>
               </DialogTrigger>
