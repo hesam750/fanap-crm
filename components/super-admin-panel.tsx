@@ -53,6 +53,7 @@ export function SuperAdminPanel({ currentUser, tanks = [], generators = [], onRe
   const [users, setUsers] = useState<User[]>([])
   const [weeklyTasks, setWeeklyTasks] = useState<WeeklyTask[]>([])
   const [refreshing, setRefreshing] = useState(false)
+  const [activeTab, setActiveTab] = useState("system")
 
   useEffect(() => {
     loadInitialData()
@@ -227,15 +228,31 @@ export function SuperAdminPanel({ currentUser, tanks = [], generators = [], onRe
         </Button>
       </div>
 
-      <Tabs defaultValue="system" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        {/* Mobile dropdown selector */}
+        <div className="md:hidden mb-4">
+          <Select value={activeTab} onValueChange={setActiveTab}>
+            <SelectTrigger>
+              <SelectValue placeholder="انتخاب بخش" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="system">تنظیمات سیستم</SelectItem>
+              <SelectItem value="users">مدیریت کاربران</SelectItem>
+              <SelectItem value="assets">مدیریت تجهیزات</SelectItem>
+              <SelectItem value="tasks">مدیریت وظایف</SelectItem>
+              <SelectItem value="planning">برنامه‌ریزی هفتگی</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Desktop tab list */}
+        <TabsList className="hidden md:grid w-full grid-cols-5">
           <TabsTrigger value="system">تنظیمات سیستم</TabsTrigger>
           <TabsTrigger value="users">مدیریت کاربران</TabsTrigger>
           <TabsTrigger value="assets">مدیریت تجهیزات</TabsTrigger>
           <TabsTrigger value="tasks">مدیریت وظایف</TabsTrigger>
           <TabsTrigger value="planning">برنامه‌ریزی هفتگی</TabsTrigger>
         </TabsList>
-
         <TabsContent value="system" className="space-y-4">
           <Card>
             <CardHeader>

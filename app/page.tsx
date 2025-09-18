@@ -353,12 +353,12 @@ export default function Home() {
         <Card className="shadow-sm border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             {/* Mobile tab switcher */}
-            <div className="p-3 md:hidden">
+             <div className="md:hidden mb-4">
               <Select value={activeTab} onValueChange={setActiveTab}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="انتخاب بخش" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="text-right">
                   {auth.canViewDashboard() && (
                     <SelectItem value="dashboard">داشبورد</SelectItem>
                   )}
