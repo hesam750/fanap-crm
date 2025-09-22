@@ -3,7 +3,7 @@ import { db } from "./database"
 import type { User } from "./types"
 import { NextRequest } from "next/server"
 
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production"
+  const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production"
 
 export async function validateAuth(request: NextRequest): Promise<User | null> {
   // Get token from cookie (same as middleware)

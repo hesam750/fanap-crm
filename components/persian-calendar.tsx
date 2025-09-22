@@ -166,55 +166,55 @@ export function PersianCalendarComponent({
   return (
      <Card className="w-full" dir="rtl">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+          <CardTitle className="flex items-center gap-2 min-w-0 text-lg md:text-xl">
             <Calendar className="h-5 w-5" />
-            برنامه‌ریزی هفتگی نگهداری و تعمیرات
+            <span className="truncate">برنامه‌ریزی هفتگی نگهداری و تعمیرات</span>
           </CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
             {onRefresh && (
-              <Button variant="outline" size="sm" onClick={onRefresh}>
+              <Button variant="outline" size="sm" onClick={onRefresh} className="w-full sm:w-auto">
                 <RefreshCw className="h-4 w-4" />
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={goToCurrentWeek}>
+            <Button variant="outline" size="sm" onClick={goToCurrentWeek} className="w-full sm:w-auto">
               هفته جاری
             </Button>
-            <Button variant="outline" size="sm" onClick={goToPreviousWeek}>
+            <Button variant="outline" size="sm" onClick={goToPreviousWeek} className="w-full sm:w-auto">
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={goToNextWeek}>
+            <Button variant="outline" size="sm" onClick={goToNextWeek} className="w-full sm:w-auto">
               <ChevronLeft className="h-4 w-4" />
             </Button>
           </div>
         </div>
-        <div className="text-sm text-muted-foreground">
+        <div className="text-xs md:text-sm text-muted-foreground">
           {PersianCalendar.formatPersianDate(weekDays[0], "long")} تا{" "}
           {PersianCalendar.formatPersianDate(weekDays[6], "long")}
         </div>
 
         {/* Summary Stats */}
-        <div className="grid grid-cols-4 gap-4 mt-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
           <div className="text-center p-3 bg-blue-50 rounded-lg">
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-lg md:text-2xl font-bold text-blue-600">
               {tanks.length}
             </div>
             <div className="text-sm text-blue-700">مخزن</div>
           </div>
           <div className="text-center p-3 bg-green-50 rounded-lg">
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-lg md:text-2xl font-bold text-green-600">
               {generators.length}
             </div>
             <div className="text-sm text-green-700">ژنراتور</div>
           </div>
           <div className="text-center p-3 bg-orange-50 rounded-lg">
-            <div className="text-2xl font-bold text-orange-600">
+            <div className="text-lg md:text-2xl font-bold text-orange-600">
               {weeklyTasks.length}
             </div>
             <div className="text-sm text-orange-700">وظیفه</div>
           </div>
-          <div className="text-center p-3 bg-purple-50 rounded-lg">
-            <div className="text-2xl font-bold text-purple-600">
+          <div className="text-center p-2 sm:p-3 bg-purple-50 rounded-lg hidden sm:block">
+            <div className="text-lg md:text-2xl font-bold text-purple-600">
               {weeklyTasks.filter(t => t.status === "completed").length}
             </div>
             <div className="text-sm text-purple-700">انجام شده</div>
@@ -224,15 +224,15 @@ export function PersianCalendarComponent({
 
       <CardContent>
         <div className="overflow-x-auto">
-          <div className="min-w-[1000px]">
+          <div className="min-w-[800px] md:min-w-[1000px]">
             {/* Header with days and maintenance summary */}
             <div className="grid grid-cols-8 gap-1 mb-2">
-              <div className="p-2 text-center font-medium text-sm">ساعت</div>
+              <div className="p-2 text-center font-medium text-xs md:text-sm">ساعت</div>
               {weekDays.map((day, index) => {
                 const summary = getMaintenanceSummary(index)
                 return (
                   <div key={index} className="p-2 text-center border rounded-lg bg-muted/50">
-                    <div className="font-medium text-sm">
+                    <div className="font-medium text-xs md:text-sm">
                       {PersianCalendar.getWeekdayName(day)}
                     </div>
                     <div className="text-xs text-muted-foreground">
@@ -263,7 +263,7 @@ export function PersianCalendarComponent({
             <div className="space-y-1">
               {timeSlots.map((timeSlot) => (
                 <div key={timeSlot} className="grid grid-cols-8 gap-1">
-                  <div className="p-2 text-center text-sm font-medium bg-muted rounded">
+                  <div className="p-2 text-center text-xs md:text-sm font-medium bg-muted rounded">
                     {timeSlot}
                   </div>
 
@@ -287,7 +287,7 @@ export function PersianCalendarComponent({
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="w-full h-full min-h-[70px] opacity-0 hover:opacity-100 transition-opacity"
+                              className="w-full h-full min-h-[70px] md:min-h-[70px] opacity-0 hover:opacity-100 transition-opacity"
                               onClick={() => {
                                 setSelectedDay(dayIndex)
                                 setSelectedTime(timeSlot)

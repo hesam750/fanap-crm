@@ -353,30 +353,30 @@ export default function Home() {
         <Card className="shadow-sm border-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             {/* Mobile tab switcher */}
-             <div className="md:hidden mb-4">
+            <div className="md:hidden mb-4">
               <Select value={activeTab} onValueChange={setActiveTab}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="انتخاب بخش" />
-                </SelectTrigger>
-                <SelectContent className="text-right">
-                  {auth.canViewDashboard() && (
-                    <SelectItem value="dashboard">داشبورد</SelectItem>
-                  )}
-                  {auth.canViewAnalytics() && (
-                    <SelectItem value="analytics">تحلیل‌ها</SelectItem>
-                  )}
-                  {auth.canViewReports() && (
-                    <SelectItem value="reports">گزارش‌ها</SelectItem>
-                  )}
-                  {(auth.canManageTasks() || auth.hasPermission("view_assigned_tasks")) && (
-                    <SelectItem value="planning">برنامه‌ریزی هفتگی</SelectItem>
-                  )}
-                  <SelectItem value="alerts">هشدارها</SelectItem>
-                  {auth.isSuperAdmin() && (
-                    <SelectItem value="admin">مدیریت</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+                <SelectTrigger className="w-full max-w-full justify-between overflow-hidden truncate">
+                   <SelectValue placeholder="انتخاب بخش" />
+                 </SelectTrigger>
+                <SelectContent className="text-right w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-2rem)] max-h-[60vh] overflow-auto">
+                   {auth.canViewDashboard() && (
+                     <SelectItem value="dashboard">داشبورد</SelectItem>
+                   )}
+                   {auth.canViewAnalytics() && (
+                     <SelectItem value="analytics">تحلیل‌ها</SelectItem>
+                   )}
+                   {auth.canViewReports() && (
+                     <SelectItem value="reports">گزارش‌ها</SelectItem>
+                   )}
+                   {(auth.canManageTasks() || auth.hasPermission("view_assigned_tasks")) && (
+                     <SelectItem value="planning">برنامه‌ریزی هفتگی</SelectItem>
+                   )}
+                   <SelectItem value="alerts">هشدارها</SelectItem>
+                   {auth.isSuperAdmin() && (
+                     <SelectItem value="admin">مدیریت</SelectItem>
+                   )}
+                 </SelectContent>
+               </Select>
             </div>
 
             <div className="border-b bg-muted/30 rounded-t-lg">

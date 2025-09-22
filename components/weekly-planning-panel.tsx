@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { PersianCalendarComponent } from "./persian-calendar"
-import { Plus, Calendar, Users, Clock, Repeat, Edit, Save, X } from "lucide-react"
+import { Plus, Calendar, Users, Clock, Repeat, Edit, Save, X, Trash } from "lucide-react"
 import type { WeeklyTask, User, Tank, Generator } from "@/lib/types"
 
 interface WeeklyPlanningPanelProps {
@@ -26,6 +26,8 @@ interface WeeklyPlanningPanelProps {
   onUpdateTask?: (taskId: string, updates: Partial<WeeklyTask>) => void
   onTaskClick?: (task: WeeklyTask) => void
   onRefresh?: () => void
+  // اضافه کردن تعریف پراپ حذف برای رفع خطای TypeScript
+  onDeleteTask?: (taskId: string) => Promise<void>
 }
 
 export function WeeklyPlanningPanel({
@@ -38,6 +40,7 @@ export function WeeklyPlanningPanel({
   onUpdateTask,
   onTaskClick,
   onRefresh,
+  onDeleteTask,
 }: WeeklyPlanningPanelProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<WeeklyTask | null>(null)
@@ -130,6 +133,21 @@ export function WeeklyPlanningPanel({
     setIsEditing(false)
   }
 
+  const handleDeleteTask = async () => {
+    if (!selectedTask || !onDeleteTask) return
+    const ok = window.confirm("آیا از حذف این وظیفه هفتگی مطمئن هستید؟")
+    if (!ok) return
+    try {
+      await onDeleteTask(selectedTask.id)
+      setSelectedTask(null)
+      setIsEditing(false)
+      alert("وظیفه هفتگی با موفقیت حذف شد")
+    } catch (error) {
+      console.error("Failed to delete weekly task:", error)
+      alert("خطا در حذف وظیفه هفتگی")
+    }
+  }
+
   const handleCreateTask = () => {
     if (!onCreateTask) return
 
@@ -202,29 +220,26 @@ export function WeeklyPlanningPanel({
         status: operatorStatus,
         description: operatorDescription,
       })
-      // همگام‌سازی وضعیت محلی
-      const newSelected = { ...selectedTask, status: operatorStatus, description: operatorDescription }
-      setSelectedTask(newSelected)
-      setEditTask(newSelected)
-      alert("به‌روزرسانی با موفقیت ثبت شد")
+    
+      alert("وضعیت وظیفه به‌روزرسانی شد")
     } catch (error) {
-      console.error("Operator update failed:", error)
-      alert("خطا در ثبت به‌روزرسانی اپراتور")
+      console.error("Failed to update operator status:", error)
+      alert("خطا در ثبت وضعیت توسط اپراتور")
     }
   }
 
   return (
     <div className="space-y-6" dir="rtl">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 w-full min-w-0">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 w-full min-w-0">
         <div className="flex items-center gap-2 flex-1 min-w-0 overflow-hidden">
           <Calendar className="h-6 w-6 text-blue-500" />
-          <h2 className="text-2xl font-bold truncate">برنامه‌ریزی هفتگی</h2>
+          <h2 className="text-xl sm:text-2xl font-bold truncate">برنامه‌ریزی هفتگی</h2>
           <Badge variant="outline">تقویم شمسی</Badge>
         </div>
         {canManageTasks && (
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="w-full sm:w-auto whitespace-nowrap shrink-0">
+              <Button size="sm" className="w-full sm:w-auto whitespace-nowrap shrink-0">
                 <Plus className="h-4 w-4 ml-2" />
                 وظیفه جدید
               </Button>
@@ -419,10 +434,16 @@ export function WeeklyPlanningPanel({
                   {isEditing ? "ویرایش وظیفه" : "جزئیات وظیفه"}
                 </DialogTitle>
                 {canManageTasks && !isEditing && (
-                  <Button variant="outline" size="sm" onClick={handleEditTask}>
-                    <Edit className="h-4 w-4 ml-2" />
-                    ویرایش
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={handleEditTask}>
+                      <Edit className="h-4 w-4 ml-2" />
+                      ویرایش
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={handleDeleteTask}>
+                      <Trash className="h-4 w-4 ml-2" />
+                      حذف
+                    </Button>
+                  </div>
                 )}
               </div>
             </DialogHeader>
@@ -689,23 +710,23 @@ export function WeeklyPlanningPanel({
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{weeklyTasks.length}</div>
+              <div className="text-xl md:text-2xl font-bold text-blue-600">{weeklyTasks.length}</div>
               <div className="text-sm text-muted-foreground">کل وظایف</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">
+              <div className="text-xl md:text-2xl font-bold text-red-600">
                 {weeklyTasks.filter((t) => t.priority === "critical").length}
               </div>
               <div className="text-sm text-muted-foreground">بحرانی</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">
+              <div className="text-xl md:text-2xl font-bold text-orange-600">
                 {weeklyTasks.filter((t) => t.priority === "high").length}
               </div>
               <div className="text-sm text-muted-foreground">اولویت بالا</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{weeklyTasks.filter((t) => t.recurring).length}</div>
+              <div className="text-xl md:text-2xl font-bold text-green-600">{weeklyTasks.filter((t) => t.recurring).length}</div>
               <div className="text-sm text-muted-foreground">تکراری</div>
             </div>
           </div>

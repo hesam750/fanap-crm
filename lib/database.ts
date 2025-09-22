@@ -793,15 +793,22 @@ export class DatabaseService {
           priority: taskData.priority || "medium",
           dueDate: taskData.dueDate ? new Date(taskData.dueDate) : null,
           checklist: taskData.checklist || [],
-          operatorNote: taskData.operatorNote || null,
         },
-        include: {
-          assignedToUser: {
-            select: { name: true, email: true }
-          },
-          assignedByUser: {
-            select: { name: true, email: true }
-          }
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          assignedTo: true,
+          assignedBy: true,
+          status: true,
+          priority: true,
+          dueDate: true,
+          completedAt: true,
+          checklist: true,
+          createdAt: true,
+          updatedAt: true,
+          assignedToUser: { select: { name: true, email: true } },
+          assignedByUser: { select: { name: true, email: true } },
         }
       })
       return task
@@ -815,13 +822,21 @@ export class DatabaseService {
     try {
       const tasks = await prisma.task.findMany({
         orderBy: { createdAt: 'desc' },
-        include: {
-          assignedToUser: {
-            select: { name: true, email: true }
-          },
-          assignedByUser: {
-            select: { name: true, email: true }
-          }
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          assignedTo: true,
+          assignedBy: true,
+          status: true,
+          priority: true,
+          dueDate: true,
+          completedAt: true,
+          checklist: true,
+          createdAt: true,
+          updatedAt: true,
+          assignedToUser: { select: { name: true, email: true } },
+          assignedByUser: { select: { name: true, email: true } },
         }
       })
       return tasks
@@ -836,13 +851,21 @@ export class DatabaseService {
       const tasks = await prisma.task.findMany({
         where: { assignedTo: userId },
         orderBy: { createdAt: 'desc' },
-        include: {
-          assignedToUser: {
-            select: { name: true, email: true }
-          },
-          assignedByUser: {
-            select: { name: true, email: true }
-          }
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          assignedTo: true,
+          assignedBy: true,
+          status: true,
+          priority: true,
+          dueDate: true,
+          completedAt: true,
+          checklist: true,
+          createdAt: true,
+          updatedAt: true,
+          assignedToUser: { select: { name: true, email: true } },
+          assignedByUser: { select: { name: true, email: true } },
         }
       })
       return tasks
@@ -856,10 +879,22 @@ export class DatabaseService {
     try {
       const task = await prisma.task.findUnique({
         where: { id: taskId },
-        include: {
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          assignedTo: true,
+          assignedBy: true,
+          status: true,
+          priority: true,
+          dueDate: true,
+          completedAt: true,
+          checklist: true,
+          createdAt: true,
+          updatedAt: true,
           assignedToUser: { select: { name: true, email: true } },
-          assignedByUser: { select: { name: true, email: true } },
-        },
+          assignedByUser: { select: { name: true, email: true } }
+        }
       })
       return task
     } catch (error) {
@@ -871,6 +906,11 @@ export class DatabaseService {
   async updateTask(taskId: string, updates: any): Promise<any[]> {
     try {
       const dataToUpdate: any = { ...updates }
+
+      // فیلد ناسازگار را حذف کن
+      if (typeof dataToUpdate.operatorNote !== 'undefined') {
+        delete dataToUpdate.operatorNote
+      }
 
       // اگر وضعیت به completed تغییر کرد، completedAt را ست کن؛ در غیر این صورت null شود
       if (typeof updates?.status === 'string') {

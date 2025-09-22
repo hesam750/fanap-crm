@@ -126,7 +126,6 @@ model Task {
   dueDate     DateTime?
   completedAt DateTime?
   checklist   Json?
-  operatorNote String?   // New: note written by operator
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   

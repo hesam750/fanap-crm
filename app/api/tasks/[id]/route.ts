@@ -55,7 +55,7 @@ export async function PUT(request: NextRequest, ctx: { params: Promise<{ id: str
       }
 
       // Only allow limited fields
-      const allowedKeys = new Set(["status", "description", "checklist", "operatorNote"]) // allow checklist updates for assignee
+      const allowedKeys = new Set(["status", "description", "checklist"]) // removed operatorNote due to column absence
       const limited: Record<string, any> = {}
       for (const [k, v] of Object.entries(filteredUpdates)) {
         if (allowedKeys.has(k)) limited[k] = v

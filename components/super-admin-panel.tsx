@@ -142,8 +142,8 @@ export function SuperAdminPanel({ currentUser, tanks = [], generators = [], onRe
 
   const handleCreateTask = async () => {
     try {
-      if (!newTask.title || !newTask.assignedTo || !newTask.dueDate) {
-        alert("لطفاً تمام فیلدهای ضروری را پر کنید")
+      if (!newTask.title || !newTask.assignedTo) {
+        alert("لطفاً عنوان و کاربر مسئول را وارد کنید")
         return
       }
 
@@ -450,6 +450,18 @@ export function SuperAdminPanel({ currentUser, tanks = [], generators = [], onRe
             generators={generators}
             onCreateTask={handleCreateWeeklyTask}
             onUpdateTask={handleUpdateWeeklyTask}
+            onDeleteTask={async (taskId: string) => {
+              // Optimistic remove
+              const snapshot = weeklyTasks
+              setWeeklyTasks(prev => prev.filter(t => t.id !== taskId))
+              try {
+                await apiClient.deleteWeeklyTask(taskId)
+              } catch (error) {
+                console.error('Failed to delete weekly task:', error)
+                setWeeklyTasks(snapshot) // rollback
+                alert('خطا در حذف وظیفه هفتگی')
+              }
+            }}
           />
         </TabsContent>
       </Tabs>
