@@ -292,7 +292,7 @@ const handleDeleteGenerator = async (generatorId: string, generatorName: string)
                   افزودن مخزن
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md" dir="rtl">
+              <DialogContent className="max-w-md w-[min(100vw-1rem,28rem)]" dir="rtl">
                 <DialogHeader>
                   <DialogTitle>افزودن مخزن جدید</DialogTitle>
                 </DialogHeader>
@@ -431,7 +431,7 @@ const handleDeleteGenerator = async (generatorId: string, generatorName: string)
                   افزودن ژنراتور
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md" dir="rtl">
+              <DialogContent className="max-w-md w-[min(100vw-1rem,28rem)]" dir="rtl">
                 <DialogHeader>
                   <DialogTitle>افزودن ژنراتور جدید</DialogTitle>
                 </DialogHeader>
