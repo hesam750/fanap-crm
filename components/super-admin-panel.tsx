@@ -16,6 +16,7 @@ import { WeeklyPlanningPanel } from "@/components/weekly-planning-panel"
 import { DynamicManagementPanel } from "@/components/dynamic-management-panel"
 import { UserManagementPanel } from "@/components/user-management-panel"
 import { apiClient } from "@/lib/api-client"
+import { useToast } from "@/components/ui/use-toast"
 
 interface SuperAdminPanelProps {
   currentUser: User
@@ -54,6 +55,7 @@ export function SuperAdminPanel({ currentUser, tanks = [], generators = [], onRe
   const [weeklyTasks, setWeeklyTasks] = useState<WeeklyTask[]>([])
   const [refreshing, setRefreshing] = useState(false)
   const [activeTab, setActiveTab] = useState("system")
+  const { toast } = useToast()
 
   useEffect(() => {
     loadInitialData()
@@ -124,10 +126,10 @@ export function SuperAdminPanel({ currentUser, tanks = [], generators = [], onRe
       }
       
       await apiClient.updateSystemSettings(settingsToSave)
-      alert("تنظیمات با موفقیت ذخیره شد")
+      toast({ title: "موفقیت", description: "تنظیمات با موفقیت ذخیره شد", variant: "success" })
     } catch (error) {
       console.error("Failed to save settings:", error)
-      alert("خطا در ذخیره تنظیمات")
+      toast({ title: "خطا", description: "خطا در ذخیره تنظیمات", variant: "destructive" })
     } finally {
       setLoading(false)
     }
@@ -143,7 +145,7 @@ export function SuperAdminPanel({ currentUser, tanks = [], generators = [], onRe
   const handleCreateTask = async () => {
     try {
       if (!newTask.title || !newTask.assignedTo) {
-        alert("لطفاً عنوان و کاربر مسئول را وارد کنید")
+        toast({ title: "خطا", description: "لطفاً عنوان و کاربر مسئول را وارد کنید", variant: "destructive" })
         return
       }
 
@@ -165,11 +167,11 @@ export function SuperAdminPanel({ currentUser, tanks = [], generators = [], onRe
         dueDate: "",
       })
 
-      alert("وظیفه با موفقیت ایجاد شد")
-      refreshData()
+      toast({ title: "موفقیت", description: "وظیفه با موفقیت ایجاد شد", variant: "success" })
+      onRefresh?.()
     } catch (error) {
       console.error("Failed to create task:", error)
-      alert("خطا در ایجاد وظیفه")
+      toast({ title: "خطا", description: "خطا در ایجاد وظیفه", variant: "destructive" })
     }
   }
 
@@ -183,7 +185,7 @@ export function SuperAdminPanel({ currentUser, tanks = [], generators = [], onRe
       const response = await apiClient.createWeeklyTask(task)
       if (response.task) {
         setWeeklyTasks((prev) => prev.map((t) => (t.id === tempId ? response.task : t)))
-        alert("وظیفه هفتگی با موفقیت ایجاد شد")
+        toast({ title: "موفقیت", description: "وظیفه هفتگی با موفقیت ایجاد شد", variant: "success" })
       } else {
         await loadWeeklyTasks()
       }
@@ -191,7 +193,7 @@ export function SuperAdminPanel({ currentUser, tanks = [], generators = [], onRe
       console.error('Failed to create weekly task:', error)
       // rollback
       setWeeklyTasks((prev) => prev.filter((t) => t.id !== tempId))
-      alert("خطا در ایجاد وظیفه هفتگی")
+      toast({ title: "خطا", description: "خطا در ایجاد وظیفه هفتگی", variant: "destructive" })
     }
   }
 
@@ -210,7 +212,7 @@ export function SuperAdminPanel({ currentUser, tanks = [], generators = [], onRe
     } catch (error) {
       console.error("Failed to update weekly task:", error)
       setWeeklyTasks(snapshot) // rollback
-      alert("خطا در به‌روزرسانی وظیفه هفتگی")
+      toast({ title: "خطا", description: "خطا در به‌روزرسانی وظیفه هفتگی", variant: "destructive" })
     }
   }
 
@@ -435,7 +437,7 @@ export function SuperAdminPanel({ currentUser, tanks = [], generators = [], onRe
               </div>
               <Button className="w-full" onClick={handleCreateTask}>
                 <Bell className="h-4 w-4 ml-2" />
-                ایجاد وظیفه و ارسال اطلاع‌رسانی
+                ایجاد وظیفه 
               </Button>
             </CardContent>
           </Card>
@@ -458,8 +460,7 @@ export function SuperAdminPanel({ currentUser, tanks = [], generators = [], onRe
                 await apiClient.deleteWeeklyTask(taskId)
               } catch (error) {
                 console.error('Failed to delete weekly task:', error)
-                setWeeklyTasks(snapshot) // rollback
-                alert('خطا در حذف وظیفه هفتگی')
+                toast({ title: 'خطا', description: 'خطا در حذف وظیفه هفتگی', variant: 'destructive' })
               }
             }}
           />

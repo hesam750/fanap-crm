@@ -230,7 +230,8 @@ export default function Home() {
   }
 
   const handleRefreshData = async () => {
-    await loadData()
+    // Minimal refresh: only reload tasks and weekly tasks to avoid heavy full data fetch
+    await Promise.all([loadTasksOnly(), loadWeeklyTasksOnly()])
   }
 
   function handleLogin(loggedInUser: User) {

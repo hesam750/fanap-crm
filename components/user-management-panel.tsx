@@ -15,22 +15,23 @@ import { Switch } from "@/components/ui/switch"
 import { Plus, Edit, Trash2, Users, Eye, EyeOff, Save, X } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 import type { User } from "@/lib/types"
+import { useToast } from "@/components/ui/use-toast"
 
-const AVAILABLE_PERMISSIONS = [
-  { id: "view-dashboard", label: "مشاهده داشبورد" },
-  { id: "view-analytics", label: "مشاهده تحلیل‌ها" },
-  { id: "view-reports", label: "مشاهده گزارش‌ها" },
-  { id: "manage-tasks", label: "مدیریت وظایف" },
-  { id: "assign-tasks", label: "تخصیص وظایف" },
-  { id: "update-tank-levels", label: "بروزرسانی سطح مخازن" },
-  { id: "update-generator-levels", label: "بروزرسانی سطح ژنراتورها" },
-  { id: "acknowledge-alerts", label: "تأیید هشدارها" },
-  { id: "manage-users", label: "مدیریت کاربران" },
-  { id: "manage-system", label: "مدیریت سیستم" },
-  { id: "add-tanks", label: "افزودن مخزن" },
-  { id: "add-generators", label: "افزودن ژنراتور" },
-  { id: "delete-data", label: "حذف داده‌ها" },
-]
+// const AVAILABLE_PERMISSIONS = [
+//   { id: "view-dashboard", label: "مشاهده داشبورد" },
+//   { id: "view-analytics", label: "مشاهده تحلیل‌ها" },
+//   { id: "view-reports", label: "مشاهده گزارش‌ها" },
+//   { id: "manage-tasks", label: "مدیریت وظایف" },
+//   { id: "assign-tasks", label: "تخصیص وظایف" },
+//   { id: "update-tank-levels", label: "بروزرسانی سطح مخازن" },
+//   { id: "update-generator-levels", label: "بروزرسانی سطح ژنراتورها" },
+//   { id: "acknowledge-alerts", label: "تأیید هشدارها" },
+//   { id: "manage-users", label: "مدیریت کاربران" },
+//   { id: "manage-system", label: "مدیریت سیستم" },
+//   { id: "add-tanks", label: "افزودن مخزن" },
+//   { id: "add-generators", label: "افزودن ژنراتور" },
+//   { id: "delete-data", label: "حذف داده‌ها" },
+// ]
 
 const ROLE_PERMISSIONS = {
   "root": ["*"],
@@ -41,6 +42,7 @@ const ROLE_PERMISSIONS = {
 
 export function UserManagementPanel() {
   const [users, setUsers] = useState<User[]>([])
+  const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -123,7 +125,7 @@ export function UserManagementPanel() {
       console.error("Failed to create user:", error)
       // Rollback optimistic user
       setUsers((prev) => prev.filter((u) => !u.id.startsWith("temp-")))
-      alert("ایجاد کاربر ناموفق بود")
+      toast({ title: "خطا", description: "ایجاد کاربر ناموفق بود", variant: "destructive" })
     }
   }
 
@@ -189,7 +191,7 @@ export function UserManagementPanel() {
       console.error("Failed to update user:", error)
       // Rollback
       setUsers(snapshot)
-      alert("به‌روزرسانی کاربر ناموفق بود")
+      toast({ title: "خطا", description: "به‌روزرسانی کاربر ناموفق بود", variant: "destructive" })
     }
   }
 
@@ -204,7 +206,7 @@ export function UserManagementPanel() {
         console.log("User deleted successfully")
       } catch (error) {
         console.error("Failed to delete user:", error)
-        alert("حذف کاربر ناموفق بود")
+        toast({ title: "خطا", description: "حذف کاربر ناموفق بود", variant: "destructive" })
         // Rollback on error
         await loadUsers()
       }
@@ -227,16 +229,16 @@ export function UserManagementPanel() {
     })
   }
 
-  const handlePermissionToggle = (permissionId: string, checked: boolean) => {
-    if (newUser.role === "root") return
+  // const handlePermissionToggle = (permissionId: string, checked: boolean) => {
+  //   if (newUser.role === "root") return
 
-    setNewUser({
-      ...newUser,
-      permissions: checked
-        ? [...newUser.permissions, permissionId]
-        : newUser.permissions.filter((p) => p !== permissionId),
-    })
-  }
+  //   setNewUser({
+  //     ...newUser,
+  //     permissions: checked
+  //       ? [...newUser.permissions, permissionId]
+  //       : newUser.permissions.filter((p) => p !== permissionId),
+  //   })
+  // }
 
   const getRoleDisplayName = (role: User["role"]) => {
     switch (role) {

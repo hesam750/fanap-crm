@@ -13,6 +13,7 @@ import { User, Settings, Key, Activity, Edit, Save, X } from "lucide-react"
 import type { User as UserType, Task } from "@/lib/types"
 import { AuthService } from "@/lib/auth"
 import { apiClient } from "@/lib/api-client"
+import { useToast } from "@/components/ui/use-toast"
 
 interface ProfileManagementProps {
   user: UserType
@@ -21,6 +22,7 @@ interface ProfileManagementProps {
 
 export function ProfileManagement({ user, onUserUpdate }: ProfileManagementProps) {
   const [isEditing, setIsEditing] = useState(false)
+  
   const [editedUser, setEditedUser] = useState(user)
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
@@ -31,6 +33,7 @@ export function ProfileManagement({ user, onUserUpdate }: ProfileManagementProps
   const [loading, setLoading] = useState(false)
 
   const auth = AuthService.getInstance()
+  const { toast } = useToast()
 
   useEffect(() => {
     loadUserTasks()
@@ -57,27 +60,27 @@ export function ProfileManagement({ user, onUserUpdate }: ProfileManagementProps
 
       onUserUpdate?.(response.user)
       setIsEditing(false)
-      alert("پروفایل با موفقیت بروزرسانی شد")
+      toast({ title: "موفقیت", description: "پروفایل با موفقیت بروزرسانی شد", variant: "success" })
     } catch (error) {
       console.error("Failed to update profile:", error)
-      alert("خطا در بروزرسانی پروفایل")
+      toast({ title: "خطا", description: "خطا در بروزرسانی پروفایل", variant: "destructive" })
     }
   }
 
   const handleChangePassword = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert("رمز عبور جدید و تأیید آن مطابقت ندارند")
+      toast({ title: "خطا", description: "رمز عبور جدید و تأیید آن مطابقت ندارند", variant: "destructive" })
       return
     }
 
     if (passwordData.newPassword.length < 6) {
-      alert("رمز عبور باید حداقل ۶ کاراکتر باشد")
+      toast({ title: "خطا", description: "رمز عبور باید حداقل ۶ کاراکتر باشد", variant: "destructive" })
       return
     }
 
     try {
       // In a real app, you would validate the current password
-      alert("رمز عبور با موفقیت تغییر کرد")
+      toast({ title: "موفقیت", description: "رمز عبور با موفقیت تغییر کرد", variant: "default" })
       setPasswordData({
         currentPassword: "",
         newPassword: "",
@@ -85,7 +88,7 @@ export function ProfileManagement({ user, onUserUpdate }: ProfileManagementProps
       })
     } catch (error) {
       console.error("Failed to change password:", error)
-      alert("خطا در تغییر رمز عبور")
+      toast({ title: "خطا", description: "خطا در تغییر رمز عبور", variant: "destructive" })
     }
   }
 

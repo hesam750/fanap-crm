@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { PersianCalendarComponent } from "./persian-calendar"
 import { Plus, Calendar, Users, Clock, Repeat, Edit, Save, X, Trash } from "lucide-react"
 import type { WeeklyTask, User, Tank, Generator } from "@/lib/types"
+import { useToast } from "@/components/ui/use-toast"
 
 interface WeeklyPlanningPanelProps {
   currentUser: User
@@ -26,7 +27,7 @@ interface WeeklyPlanningPanelProps {
   onUpdateTask?: (taskId: string, updates: Partial<WeeklyTask>) => void
   onTaskClick?: (task: WeeklyTask) => void
   onRefresh?: () => void
-  // اضافه کردن تعریف پراپ حذف برای رفع خطای TypeScript
+
   onDeleteTask?: (taskId: string) => Promise<void>
 }
 
@@ -47,7 +48,7 @@ export function WeeklyPlanningPanel({
   const [isEditing, setIsEditing] = useState(false)
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>("")
-
+  const { toast } = useToast()
   const [editTask, setEditTask] = useState<WeeklyTask | null>(null)
   const [newTask, setNewTask] = useState({
     title: "",
@@ -121,10 +122,11 @@ export function WeeklyPlanningPanel({
 
       setIsEditing(false)
       setSelectedTask(editTask)
-      alert("تغییرات با موفقیت ذخیره شد")
+      toast({ title: "موفقیت", description: "تغییرات با موفقیت ذخیره شد", variant: "success" })
+      onRefresh?.()
     } catch (error) {
       console.error("Failed to update task:", error)
-      alert("خطا در به‌روزرسانی وظیفه")
+      toast({ title: "خطا", description: "خطا در به‌روزرسانی وظیفه", variant: "destructive" })
     }
   }
 
@@ -141,10 +143,11 @@ export function WeeklyPlanningPanel({
       await onDeleteTask(selectedTask.id)
       setSelectedTask(null)
       setIsEditing(false)
-      alert("وظیفه هفتگی با موفقیت حذف شد")
+      toast({ title: "موفقیت", description: "وظیفه هفتگی با موفقیت حذف شد", variant: "success" })
+      onRefresh?.()
     } catch (error) {
       console.error("Failed to delete weekly task:", error)
-      alert("خطا در حذف وظیفه هفتگی")
+      toast({ title: "خطا", description: "خطا در حذف وظیفه هفتگی", variant: "destructive" })
     }
   }
 
@@ -221,10 +224,11 @@ export function WeeklyPlanningPanel({
         description: operatorDescription,
       })
     
-      alert("وضعیت وظیفه به‌روزرسانی شد")
+      toast({ title: "موفقیت", description: "وضعیت وظیفه به‌روزرسانی شد", variant: "success" })
+      onRefresh?.()
     } catch (error) {
       console.error("Failed to update operator status:", error)
-      alert("خطا در ثبت وضعیت توسط اپراتور")
+      toast({ title: "خطا", description: "خطا در ثبت وضعیت توسط اپراتور", variant: "destructive" })
     }
   }
 
