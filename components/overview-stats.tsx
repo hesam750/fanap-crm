@@ -14,7 +14,8 @@ export function OverviewStats({ tanks, generators, alerts }: OverviewStatsProps)
   const fuelTanks = tanks.filter((tank) => tank.type === "fuel")
   const waterTanks = tanks.filter((tank) => tank.type === "water")
   const criticalAlerts = alerts.filter((alert) => !alert.acknowledged && alert.severity === "critical")
-  const runningGenerators = generators.filter((gen) => gen.status === "running")
+  const activeThreshold = 50
+  const activeGenerators = generators.filter((gen) => gen.currentLevel >= activeThreshold)
 
   const avgFuelLevel =
     fuelTanks.length > 0
@@ -48,10 +49,10 @@ export function OverviewStats({ tanks, generators, alerts }: OverviewStatsProps)
     },
     {
       title: "ژنراتورهای فعال",
-      value: `${runningGenerators.length}/${generators.length}`,
+      value: `${activeGenerators.length}/${generators.length}`,
       icon: Zap,
-      color: runningGenerators.length === generators.length ? "text-green-500" : "text-yellow-500",
-      bgColor: runningGenerators.length === generators.length ? "bg-green-500/10" : "bg-yellow-500/10",
+      color: activeGenerators.length === generators.length ? "text-green-500" : "text-yellow-500",
+      bgColor: activeGenerators.length === generators.length ? "bg-green-500/10" : "bg-yellow-500/10",
     },
     {
       title: "هشدارهای بحرانی",

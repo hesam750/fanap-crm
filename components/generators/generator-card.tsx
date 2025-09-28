@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Zap, AlertTriangle, Play, Square, Wrench } from "lucide-react"
+import { Zap, AlertTriangle, Play, Square, Wrench, Save } from "lucide-react"
 import type { Generator } from "@/lib/types"
 import { AuthService } from "@/lib/auth"
 import { Slider } from "@/components/ui/slider"
@@ -67,10 +67,17 @@ export function GeneratorCard({ generator, onUpdate }: GeneratorCardProps) {
 
   const clamp = (val: number) => Math.max(0, Math.min(100, Math.round(val)))
 
-  const handleQuickUpdate = (increment: number) => {
+  // const handleQuickUpdate = (increment: number) => {
+  //   if (!onUpdate) return
+  //   const newLevel = clamp((tempLevel ?? generator.currentLevel) + increment)
+  //   setTempLevel(newLevel)
+  //   onUpdate(generator.id, newLevel)
+  // }
+
+  const handleSave = () => {
     if (!onUpdate) return
-    const newLevel = clamp((tempLevel ?? generator.currentLevel) + increment)
-    setTempLevel(newLevel)
+    const newLevel = clamp(tempLevel)
+    if (newLevel === generator.currentLevel) return
     onUpdate(generator.id, newLevel)
   }
 
@@ -114,10 +121,6 @@ export function GeneratorCard({ generator, onUpdate }: GeneratorCardProps) {
               max={100}
               step={1}
               onValueChange={(v) => setTempLevel(clamp(v[0]))}
-              onValueCommit={(v) => {
-                const newLevel = clamp(v[0])
-                if (onUpdate) onUpdate(generator.id, newLevel)
-              }}
               className="h-6"
             />
           </div>
@@ -135,22 +138,12 @@ export function GeneratorCard({ generator, onUpdate }: GeneratorCardProps) {
 
         {canUpdate && (
           <div className="flex gap-2 pt-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleQuickUpdate(-10)}
-              disabled={tempLevel <= 0}
-            >
-              -10%
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleQuickUpdate(10)}
-              disabled={tempLevel >= 100}
-            >
-              +10%
-            </Button>
+            <div className="ml-auto">
+              <Button size="sm" onClick={handleSave} disabled={tempLevel === generator.currentLevel}>
+                <Save className="h-4 w-4 ml-2" />
+                ثبت تغییرات
+              </Button>
+            </div>
           </div>
         )}
       </CardContent>

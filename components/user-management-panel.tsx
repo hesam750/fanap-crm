@@ -366,8 +366,8 @@ export function UserManagementPanel() {
                 <TableHead>ایمیل</TableHead>
                 <TableHead>نقش</TableHead>
                 <TableHead>وضعیت</TableHead>
-                <TableHead>آخرین ورود</TableHead>
                 <TableHead>عملیات</TableHead>
+                {/* <TableHead>عملیات</TableHead> */}
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -126,20 +126,23 @@ function aggregateHistoricalData(
   data.forEach(day => {
     const date = new Date(day.timestamp)
     let key: string
-    
+
+    // تهیه فرمت‌کننده‌های تقویم جلالی برای سال و ماه
+    const persianYearFormatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { year: 'numeric' })
+    const persianMonthFormatter = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { month: 'long' })
+
     if (aggregation === "weekly") {
-      // محاسبه شماره هفته در سال
+      // محاسبه شماره هفته در سال (بر مبنای تاریخ میلادی، فقط نمایش سال را به شمسی تغییر می‌دهیم)
       const firstDayOfYear = new Date(date.getFullYear(), 0, 1)
       const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000
       const weekNumber = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7)
-      key = `هفته ${weekNumber} ${date.getFullYear()}`
+      const persianYear = persianYearFormatter.format(date)
+      key = `هفته ${weekNumber} ${persianYear}`
     } else { // monthly
-      // نام ماه به فارسی
-      const persianMonths = [
-        "فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور",
-        "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"
-      ]
-      key = `${persianMonths[date.getMonth()]} ${date.getFullYear()}`
+      // نمایش نام ماه و سال شمسی با استفاده از Intl
+      const persianMonth = persianMonthFormatter.format(date)
+      const persianYear = persianYearFormatter.format(date)
+      key = `${persianMonth} ${persianYear}`
     }
     
     if (!aggregated[key]) {

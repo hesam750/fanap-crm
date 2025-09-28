@@ -16,25 +16,15 @@ export class PersianCalendar {
   }
 
   static getWeekdayName(date: Date): string {
-    const days = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنج‌شنبه", "جمعه"];
-    return days[date.getDay()];
+    // نام روز هفته بر اساس تقویم شمسی
+    return new Intl.DateTimeFormat("fa-IR-u-ca-persian", { weekday: "long" }).format(date);
   }
 
   static formatPersianDate(date: Date, format: "short" | "long" = "short"): string {
-    // This is a simplified version - in a real app you'd use a proper Persian date library
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    
-    if (format === "short") {
-      return `${year}/${month}/${day}`;
-    } else {
-      const monthNames = [
-        "فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور",
-        "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"
-      ];
-      return `${day} ${monthNames[month - 1]} ${year}`;
-    }
+    // نمایش تاریخ به‌صورت کاملاً شمسی با اعداد فارسی
+    const optionsShort: Intl.DateTimeFormatOptions = { year: "numeric", month: "2-digit", day: "2-digit" };
+    const optionsLong: Intl.DateTimeFormatOptions = { year: "numeric", month: "long", day: "numeric" };
+    return new Intl.DateTimeFormat("fa-IR-u-ca-persian", format === "short" ? optionsShort : optionsLong).format(date);
   }
 
   static convertToPersianDay(gregorianDay: number): number {

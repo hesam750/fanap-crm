@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Droplets, Fuel, AlertTriangle, Edit } from "lucide-react"
+import { Droplets, Fuel, AlertTriangle, Save } from "lucide-react"
 import type { Tank } from "@/lib/types"
 import { AuthService } from "@/lib/auth"
 import { Slider } from "@/components/ui/slider"
@@ -46,6 +46,13 @@ export function TankCard({ tank, onUpdate }: TankCardProps) {
     if (!onUpdate) return
     const newLevel = clamp((tempLevel ?? tank.currentLevel) + increment)
     setTempLevel(newLevel)
+    onUpdate(tank.id, newLevel)
+  }
+
+  const handleSave = () => {
+    if (!onUpdate) return
+    const newLevel = clamp(tempLevel)
+    if (newLevel === tank.currentLevel) return
     onUpdate(tank.id, newLevel)
   }
 
@@ -91,10 +98,6 @@ export function TankCard({ tank, onUpdate }: TankCardProps) {
               max={100}
               step={1}
               onValueChange={(v) => setTempLevel(clamp(v[0]))}
-              onValueCommit={(v) => {
-                const newLevel = clamp(v[0])
-                if (onUpdate) onUpdate(tank.id, newLevel)
-              }}
               className="h-6"
             />
           </div>
@@ -114,15 +117,12 @@ export function TankCard({ tank, onUpdate }: TankCardProps) {
 
         {canUpdate && (
           <div className="flex gap-2 pt-2">
-            <Button size="sm" variant="outline" onClick={() => handleQuickUpdate(-5)} disabled={tempLevel <= 0}>
-              -5%
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => handleQuickUpdate(5)} disabled={tempLevel >= 100}>
-              +5%
-            </Button>
-            <Button size="sm" variant="ghost" className="mr-auto">
-              <Edit className="h-4 w-4" />
-            </Button>
+            <div className="ml-auto">
+              <Button size="sm" onClick={handleSave} disabled={tempLevel === tank.currentLevel}>
+                <Save className="h-4 w-4 ml-2" />
+                ثبت تغییرات
+              </Button>
+            </div>
           </div>
         )}
       </CardContent>

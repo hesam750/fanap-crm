@@ -8,15 +8,18 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Settings, Bell, Database, RefreshCw } from "lucide-react"
+import { Settings, Bell, Database } from "lucide-react"
 import type { User, Tank, Generator, WeeklyTask, SystemSettings } from "@/lib/types"
 import { WeeklyPlanningPanel } from "@/components/weekly-planning-panel"
 import { DynamicManagementPanel } from "@/components/dynamic-management-panel"
 import { UserManagementPanel } from "@/components/user-management-panel"
 import { apiClient } from "@/lib/api-client"
 import { useToast } from "@/components/ui/use-toast"
+import DatePicker from "react-multi-date-picker"
+import persian from "react-date-object/calendars/persian"
+import persian_fa from "react-date-object/locales/persian_fa"
+import TimePicker from "react-multi-date-picker/plugins/time_picker"
 
 interface SuperAdminPanelProps {
   currentUser: User
@@ -53,7 +56,7 @@ export function SuperAdminPanel({ currentUser, tanks = [], generators = [], onRe
   const [loading, setLoading] = useState(false)
   const [users, setUsers] = useState<User[]>([])
   const [weeklyTasks, setWeeklyTasks] = useState<WeeklyTask[]>([])
-  const [refreshing, setRefreshing] = useState(false)
+  // const [refreshing, setRefreshing] = useState(false)
   const [activeTab, setActiveTab] = useState("system")
   const { toast } = useToast()
 
@@ -69,12 +72,12 @@ export function SuperAdminPanel({ currentUser, tanks = [], generators = [], onRe
     ])
   }
 
-  const refreshData = async () => {
-    setRefreshing(true)
-    await loadInitialData()
-    setRefreshing(false)
-    onRefresh?.()
-  }
+  // const refreshData = async () => {
+  //   setRefreshing(true)
+  //   await loadInitialData()
+  //   setRefreshing(false)
+  //   onRefresh?.()
+  // }
 
   const loadSystemSettings = async () => {
     try {
@@ -429,10 +432,26 @@ export function SuperAdminPanel({ currentUser, tanks = [], generators = [], onRe
               </div>
               <div>
                 <Label>تاریخ سررسید</Label>
-                <Input
-                  type="datetime-local"
-                  value={newTask.dueDate}
-                  onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                {/* تاریخ و زمان کاملاً فارسی (شمسی) */}
+                <DatePicker
+                  calendar={persian}
+                  locale={persian_fa}
+                  format="YYYY/MM/DD HH:mm"
+                  value={newTask.dueDate ? new Date(newTask.dueDate) : undefined}
+                  placeholder="انتخاب تاریخ و ساعت (شمسی)"
+                  className="w-full"
+                  inputClass="w-full h-10 px-3 rounded-md bg-background text-foreground border border-input focus:outline-none focus:ring-2 focus:ring-ring"
+                  plugins={[<TimePicker position="bottom" />]}
+                  onChange={(val: any) => {
+                    try {
+                      // val می‌تواند DateObject یا Date باشد
+                      const dateObj = Array.isArray(val) ? val[0] : val
+                      const jsDate = typeof dateObj?.toDate === "function" ? dateObj.toDate() : (dateObj instanceof Date ? dateObj : undefined)
+                      setNewTask({ ...newTask, dueDate: jsDate ? jsDate.toISOString() : "" })
+                    } catch (e) {
+                      setNewTask({ ...newTask, dueDate: "" })
+                    }
+                  }}
                 />
               </div>
               <Button className="w-full" onClick={handleCreateTask}>
