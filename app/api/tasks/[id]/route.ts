@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/database"
 import { validateAuth } from "@/lib/auth-middleware"
+import { broadcast } from "@/lib/event-bus"
 
 export async function GET(request: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
@@ -54,8 +55,8 @@ export async function PUT(request: NextRequest, ctx: { params: Promise<{ id: str
         return NextResponse.json({ error: "Forbidden" }, { status: 403 })
       }
 
-      // Only allow limited fields
-      const allowedKeys = new Set(["status", "description", "checklist"]) // removed operatorNote due to column absence
+      // Limit fields by role
+      const allowedKeys = new Set(["status", "description", "checklist", "operatorNote"]) // اپراتور، مدیر و سرپرست می‌توانند وضعیت/توضیحات/چک‌لیست/یادداشت را به‌روزرسانی کنند
       const limited: Record<string, any> = {}
       for (const [k, v] of Object.entries(filteredUpdates)) {
         if (allowedKeys.has(k)) limited[k] = v
@@ -83,14 +84,16 @@ export async function PUT(request: NextRequest, ctx: { params: Promise<{ id: str
 
     // log activity for task update
     try {
-      await db.logActivity(
-        "task_updated",
-        `Task "${updatedTask.title}" updated` + (filteredUpdates.status ? ` (status: ${filteredUpdates.status})` : ""),
-        user.id
-      )
+      let desc = `Task "${updatedTask.title}" updated`
+      if (filteredUpdates.status !== undefined) desc += ` (status: ${filteredUpdates.status})`
+      if (filteredUpdates.operatorNote !== undefined) desc += ` (operator note updated)`
+      await db.logActivity("task_updated", desc, user.id)
     } catch (e) {
       console.warn("Failed to log task_updated activity", e)
     }
+
+    // Broadcast realtime update
+    broadcast("task:updated", updatedTask)
 
     return NextResponse.json({ task: updatedTask })
   } catch (error) {
@@ -123,6 +126,9 @@ export async function DELETE(request: NextRequest, ctx: { params: Promise<{ id: 
     } catch (e) {
       console.warn("Failed to log task_deleted activity", e)
     }
+
+    // Broadcast deletion
+    broadcast("task:deleted", { id })
 
     return NextResponse.json({ message: "Task deleted successfully" })
   } catch (error) {

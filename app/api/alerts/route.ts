@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/database"
+import { broadcast } from "@/lib/event-bus"
 
 export async function GET() {
   try {
@@ -40,6 +41,9 @@ export async function POST(request: NextRequest) {
       severity,
       acknowledged: alertData.acknowledged || false,
     })
+
+    // broadcast new alert
+    broadcast("alert:created", newAlert)
 
     return NextResponse.json({ alert: newAlert }, { status: 201 })
   } catch (error) {

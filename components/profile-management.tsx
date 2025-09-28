@@ -31,6 +31,7 @@ export function ProfileManagement({ user, onUserUpdate }: ProfileManagementProps
   })
   const [userTasks, setUserTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(false)
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
 
   const auth = AuthService.getInstance()
   const { toast } = useToast()
@@ -58,8 +59,15 @@ export function ProfileManagement({ user, onUserUpdate }: ProfileManagementProps
         email: editedUser.email,
       })
 
+      // If avatar file selected, upload it
+      if (avatarFile) {
+        const uploadRes = await apiClient.uploadUserAvatar(user.id, avatarFile)
+        response.user = uploadRes.user
+      }
+
       onUserUpdate?.(response.user)
       setIsEditing(false)
+      setAvatarFile(null)
       toast({ title: "موفقیت", description: "پروفایل با موفقیت بروزرسانی شد", variant: "success" })
     } catch (error) {
       console.error("Failed to update profile:", error)
@@ -79,16 +87,17 @@ export function ProfileManagement({ user, onUserUpdate }: ProfileManagementProps
     }
 
     try {
-      // In a real app, you would validate the current password
-      toast({ title: "موفقیت", description: "رمز عبور با موفقیت تغییر کرد", variant: "default" })
-      setPasswordData({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
+      const res = await apiClient.updateUser(user.id, {
+        password: passwordData.newPassword,
+        // send currentPassword for verification on server
+        // @ts-expect-error sending extra field for server-side validation
+        currentPassword: passwordData.currentPassword,
       })
-    } catch (error) {
+      toast({ title: "موفقیت", description: "رمز عبور با موفقیت تغییر کرد", variant: "success" })
+      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
+    } catch (error: any) {
       console.error("Failed to change password:", error)
-      toast({ title: "خطا", description: "خطا در تغییر رمز عبور", variant: "destructive" })
+      toast({ title: "خطا", description: error?.message || "خطا در تغییر رمز عبور", variant: "destructive" })
     }
   }
 
@@ -201,7 +210,7 @@ export function ProfileManagement({ user, onUserUpdate }: ProfileManagementProps
             <CardContent className="space-y-6">
               <div className="flex items-center gap-6 flex-wrap">
                 <Avatar className="h-20 w-20">
-                  <AvatarImage src="/placeholder.svg" />
+                  <AvatarImage src={user.avatarUrl || "/placeholder.svg"} />
                   <AvatarFallback className="text-lg">
                     {user.name
                       .split(" ")
@@ -216,6 +225,11 @@ export function ProfileManagement({ user, onUserUpdate }: ProfileManagementProps
                   <p className="text-sm text-muted-foreground">
                     عضو از: {new Date(user.createdAt).toLocaleDateString("fa-IR")}
                   </p>
+                  {isEditing && (
+                    <div className="flex items-center gap-2">
+                      <Input type="file" accept="image/*" onChange={(e) => setAvatarFile(e.target.files?.[0] || null)} />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -258,10 +272,10 @@ export function ProfileManagement({ user, onUserUpdate }: ProfileManagementProps
               <div>
                 <Label>دسترسی‌ها</Label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-                  {user.permissions.includes("*") ? (
+                  {user.permissions?.includes("*") ? (
                     <Badge variant="destructive">دسترسی کامل</Badge>
                   ) : (
-                    user.permissions.map((permission) => (
+                    (user.permissions ?? []).map((permission) => (
                       <Badge key={permission} variant="outline" className="text-xs">
                         {permission}
                       </Badge>

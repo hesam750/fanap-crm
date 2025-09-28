@@ -47,6 +47,40 @@ export default function TasksOverview({ detailed = false }) {
     fetchTasks();
   }, []); 
 
+  useEffect(() => {
+    // subscribe to SSE events
+    const es = new EventSource('/api/events');
+
+    es.addEventListener('task:created', (ev: MessageEvent) => {
+      try {
+        const task = JSON.parse(ev.data);
+        setTasks(prev => [task, ...prev]);
+      } catch {}
+    });
+
+    es.addEventListener('task:updated', (ev: MessageEvent) => {
+      try {
+        const updated = JSON.parse(ev.data);
+        setTasks(prev => prev.map(t => (String(t.id) === String(updated.id) ? { ...t, ...updated } : t)));
+      } catch {}
+    });
+
+    es.addEventListener('task:deleted', (ev: MessageEvent) => {
+      try {
+        const { id } = JSON.parse(ev.data);
+        setTasks(prev => prev.filter(t => String(t.id) !== String(id)));
+      } catch {}
+    });
+
+    es.onerror = () => {
+      // Optional: show a small reconnect indicator
+    };
+
+    return () => {
+      es.close();
+    };
+  }, []);
+
   const getStatusText = (status: string) => {
     switch (status) {
       case 'pending':

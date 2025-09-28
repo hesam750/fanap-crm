@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/database'
 import { validateAuth } from '@/lib/auth-middleware'
+import { broadcast } from '@/lib/event-bus'
 
 export async function PUT(
   request: NextRequest,
@@ -37,6 +38,9 @@ export async function PUT(
       }
 
       const task = await db.updateWeeklyTask(taskId, updates)
+
+      // انتشار رویداد به‌روزرسانی
+      broadcast('weeklyTask:updated', task)
       return NextResponse.json({ task })
     }
 
@@ -76,6 +80,9 @@ export async function PUT(
       }
 
       const updated = await db.updateWeeklyTask(taskId, filteredUpdates)
+
+      // انتشار رویداد به‌روزرسانی
+      broadcast('weeklyTask:updated', updated)
       return NextResponse.json({ task: updated })
     }
 
@@ -112,6 +119,9 @@ export async function DELETE(
     }
 
     await db.deleteWeeklyTask(taskId)
+
+    // انتشار رویداد حذف
+    broadcast('weeklyTask:deleted', { id: taskId })
 
     return NextResponse.json({
       message: 'Weekly task deleted successfully'

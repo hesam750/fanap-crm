@@ -116,7 +116,7 @@ class ApiClient {
     return this.get<{ user: User }>(`/api/users/${id}`)
   }
 
-  async updateUser(id: string, updates: Partial<{ name: string; email: string; role: string; isActive: boolean; password: string }>) {
+  async updateUser(id: string, updates: Partial<{ name: string; email: string; role: string; isActive: boolean; password: string; avatarUrl: string }>) {
     try {
       console.log('Sending update request to server:', { id, updates });
 
@@ -139,6 +139,23 @@ class ApiClient {
       console.error('API Client Error:', error);
       throw error;
     }
+  }
+
+  async uploadUserAvatar(id: string, file: File) {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch(`/api/users/${id}/avatar`, {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`API Error: ${response.status} ${response.statusText} ${errorText}`)
+    }
+
+    return response.json()
   }
 
   // System Settings operations

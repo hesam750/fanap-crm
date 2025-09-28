@@ -18,9 +18,9 @@ model User {
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  avatarUrl   String?
 
- 
-
+  
   tasks           Task[]           @relation("AssignedTo")
   assignedTasks   Task[]           @relation("AssignedBy")
   tanks           Tank[]           @relation("TankUpdatedBy")
@@ -119,6 +119,7 @@ model Task {
   id          String      @id @default(uuid())
   title       String
   description String?
+  operatorNote String?
   assignedTo  String
   assignedBy  String
   status      TaskStatus  @default(pending)

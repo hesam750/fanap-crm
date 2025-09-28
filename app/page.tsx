@@ -45,10 +45,131 @@ export default function Home() {
     }
   }, [])
 
+  // Subscribe to server-sent events for real-time updates
+  useEffect(() => {
+    if (!user) return
+
+    const es = new EventSource('/api/events')
+    const toDate = (v: any) => (v ? new Date(v) : v)
+
+    // Task events
+    es.addEventListener('task:created', (ev: MessageEvent) => {
+      try {
+        const task = JSON.parse(ev.data)
+        task.createdAt = toDate(task.createdAt)
+        task.updatedAt = toDate(task.updatedAt)
+        task.dueDate = toDate(task.dueDate)
+        task.completedAt = toDate(task.completedAt)
+        setTasks(prev => {
+          const exists = prev.some(t => String(t.id) === String(task.id))
+          return exists ? prev.map(t => (String(t.id) === String(task.id) ? task : t)) : [task, ...prev]
+        })
+      } catch (e) {
+        console.error('Failed to process task:created', e)
+      }
+    })
+
+    es.addEventListener('task:updated', (ev: MessageEvent) => {
+      try {
+        const updated = JSON.parse(ev.data)
+        updated.createdAt = toDate(updated.createdAt)
+        updated.updatedAt = toDate(updated.updatedAt)
+        updated.dueDate = toDate(updated.dueDate)
+        updated.completedAt = toDate(updated.completedAt)
+        setTasks(prev => prev.map(t => (String(t.id) === String(updated.id) ? { ...t, ...updated } : t)))
+      } catch (e) {
+        console.error('Failed to process task:updated', e)
+      }
+    })
+
+    es.addEventListener('task:deleted', (ev: MessageEvent) => {
+      try {
+        const { id } = JSON.parse(ev.data)
+        setTasks(prev => prev.filter(t => String(t.id) !== String(id)))
+      } catch (e) {
+        console.error('Failed to process task:deleted', e)
+      }
+    })
+
+    // Weekly task events
+    es.addEventListener('weeklyTask:created', (ev: MessageEvent) => {
+      try {
+        const wt = JSON.parse(ev.data)
+        wt.dueDate = toDate(wt.dueDate)
+        setWeeklyTasks(prev => {
+          const exists = prev.some(t => String(t.id) === String(wt.id))
+          return exists ? prev.map(t => (String(t.id) === String(wt.id) ? wt : t)) : [wt, ...prev]
+        })
+      } catch (e) {
+        console.error('Failed to process weeklyTask:created', e)
+      }
+    })
+
+    es.addEventListener('weeklyTask:updated', (ev: MessageEvent) => {
+      try {
+        const updated = JSON.parse(ev.data)
+        updated.dueDate = toDate(updated.dueDate)
+        setWeeklyTasks(prev => prev.map(t => (String(t.id) === String(updated.id) ? { ...t, ...updated } : t)))
+      } catch (e) {
+        console.error('Failed to process weeklyTask:updated', e)
+      }
+    })
+
+    es.addEventListener('weeklyTask:deleted', (ev: MessageEvent) => {
+      try {
+        const { id } = JSON.parse(ev.data)
+        setWeeklyTasks(prev => prev.filter(t => String(t.id) !== String(id)))
+      } catch (e) {
+        console.error('Failed to process weeklyTask:deleted', e)
+      }
+    })
+
+    // Alert events
+    es.addEventListener('alert:created', (ev: MessageEvent) => {
+      try {
+        const alert = JSON.parse(ev.data)
+        alert.createdAt = toDate(alert.createdAt)
+        setAlerts(prev => {
+          const exists = prev.some(a => String(a.id) === String(alert.id))
+          return exists ? prev.map(a => (String(a.id) === String(alert.id) ? alert : a)) : [alert, ...prev]
+        })
+      } catch (e) {
+        console.error('Failed to process alert:created', e)
+      }
+    })
+
+    es.addEventListener('alert:updated', (ev: MessageEvent) => {
+      try {
+        const updated = JSON.parse(ev.data)
+        updated.createdAt = toDate(updated.createdAt)
+        setAlerts(prev => prev.map(a => (String(a.id) === String(updated.id) ? { ...a, ...updated } : a)))
+      } catch (e) {
+        console.error('Failed to process alert:updated', e)
+      }
+    })
+
+    es.addEventListener('alert:deleted', (ev: MessageEvent) => {
+      try {
+        const { id } = JSON.parse(ev.data)
+        setAlerts(prev => prev.filter(a => String(a.id) !== String(id)))
+      } catch (e) {
+        console.error('Failed to process alert:deleted', e)
+      }
+    })
+
+    es.onerror = () => {
+      // Optional reconnection logic can be added here
+    }
+
+    return () => {
+      es.close()
+    }
+  }, [user])
+
   // به‌روزرسانی خودکار هشدارها بدون نیاز به رفرش صفحه
   useEffect(() => {
     if (!user) return
-    const intervalMs = 5000 // هر ۵ ثانیه هشدارها را بازخوانی می‌کنیم
+    const intervalMs = 15000 // با وجود SSE، نرخ polling را کم می‌کنیم
     const id = setInterval(() => {
       loadAlerts()
     }, intervalMs)

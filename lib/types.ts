@@ -7,6 +7,7 @@ export interface User {
   permissions: string[]
   createdAt: Date | string
   isActive: boolean
+  avatarUrl?: string
 }
 export interface PrismaUser {
   id: string
@@ -17,6 +18,7 @@ export interface PrismaUser {
   createdAt: Date | string
   updatedAt:Date | string
   isActive: boolean
+  avatarUrl?: string
 }
 export interface PrismaHistoricalData {
   id: string

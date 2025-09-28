@@ -9,6 +9,7 @@ import type { User as UserType } from "@/lib/types"
 import { AuthService } from "@/lib/auth"
 import { useTheme } from "next-themes"
 import { ProfileManagement } from "@/components/profile-management"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 interface DashboardHeaderProps {
   user: UserType
@@ -43,6 +44,17 @@ export function DashboardHeader({ user, alertCount, onLogout }: DashboardHeaderP
 
   const handleUserUpdate = (updatedUser: UserType) => {
     setCurrentUser(updatedUser)
+    try {
+      const stored = localStorage.getItem("currentUser")
+      const exists = stored ? JSON.parse(stored) : {}
+      const merged = { ...exists, ...updatedUser }
+      if (!Array.isArray(merged.permissions)) {
+        merged.permissions = merged.role === "root" ? ["*"] : []
+      }
+      localStorage.setItem("currentUser", JSON.stringify(merged))
+    } catch (e) {
+      // ignore storage errors
+    }
   }
 
   return (
@@ -57,6 +69,10 @@ export function DashboardHeader({ user, alertCount, onLogout }: DashboardHeaderP
         {/* Right section with user name, notifications, settings, theme switch, and logout */}
         <div className="flex items-center gap-4 flex-shrink-0">
           <div className="text-sm text-muted-foreground hidden sm:block">خوش آمدید، {currentUser.name}</div>
+          <Avatar className="size-8">
+            <AvatarImage src={currentUser.avatarUrl || "/placeholder-user.jpg"} alt={currentUser.name} />
+            <AvatarFallback>{currentUser.name?.slice(0,1) || "U"}</AvatarFallback>
+          </Avatar>
 
           {/* Notification Icon */}
           {/* <Button variant="ghost" size="icon" className="relative">

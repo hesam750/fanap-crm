@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/database'
 import { validateAuth } from '@/lib/auth-middleware'
+import { broadcast } from '@/lib/event-bus'
 
 export async function GET() {
   try {
@@ -44,6 +45,9 @@ export async function POST(request: NextRequest) {
     }
     
     const task = await db.createWeeklyTask(taskData)
+
+    // انتشار رویداد real-time برای ایجاد وظیفه هفتگی
+    broadcast('weeklyTask:created', task)
     
     return NextResponse.json({ task }, { status: 201 })
   } catch (error) {

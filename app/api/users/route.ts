@@ -4,8 +4,17 @@ import { db } from "@/lib/database"
 import bcrypt from "bcryptjs"
 
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const email = searchParams.get("email")
+
+    if (email) {
+      const user = await db.getUserByEmail(email)
+      // user already excludes password in db mapping
+      return NextResponse.json({ user })
+    }
+
     const users = await db.getUsers()
     return NextResponse.json({ users }) 
   } catch (error) {

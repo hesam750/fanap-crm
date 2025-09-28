@@ -14,8 +14,7 @@ export async function PUT(request: NextRequest, ctx: { params: Promise<{ id: str
 
     console.log("Received update request:", { id, updates });
 
-   
-    const allowedUpdates = ['name', 'email', 'role', 'isActive', 'password'] as const;
+    const allowedUpdates = ['name', 'email', 'role', 'isActive', 'password', 'avatarUrl'] as const;
     type AllowedUpdateKey = typeof allowedUpdates[number]
     const filteredUpdates: Partial<Record<AllowedUpdateKey, string | boolean>> = {};
     
@@ -25,10 +24,29 @@ export async function PUT(request: NextRequest, ctx: { params: Promise<{ id: str
       }
     }
 
+    // Handle password change with current password verification
     if (typeof filteredUpdates.password === 'string' && filteredUpdates.password.trim() !== '') {
-      console.log("Hashing new password:", filteredUpdates.password);
-      filteredUpdates.password = await bcrypt.hash(filteredUpdates.password, 10);
-      console.log("Hashed password:", filteredUpdates.password);
+      const currentPassword: string | undefined = typeof updates.currentPassword === 'string' ? updates.currentPassword : undefined
+      if (!currentPassword) {
+        return NextResponse.json({ error: 'Current password is required' }, { status: 400 })
+      }
+
+      const safeUser = await db.getUserById(id)
+      if (!safeUser) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      }
+
+      const userRow = await db.getUserWithPassword(safeUser.email)
+      if (!userRow) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      }
+
+      const isValid = await bcrypt.compare(currentPassword, userRow.password)
+      if (!isValid) {
+        return NextResponse.json({ error: 'Current password is incorrect' }, { status: 401 })
+      }
+
+      filteredUpdates.password = await bcrypt.hash(filteredUpdates.password, 10)
     } else {
       console.log("No password change requested");
       delete filteredUpdates.password;

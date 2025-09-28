@@ -189,6 +189,7 @@ export class DatabaseService {
         permissions: this.mapRolePermissions(user.role),
         createdAt: user.createdAt,
         isActive: user.isActive,
+        avatarUrl: (user as any).avatarUrl ?? undefined,
       }
     } catch (error) {
       console.error('[Database] Failed to get user by email:', error)
@@ -212,6 +213,7 @@ export class DatabaseService {
         permissions: this.mapRolePermissions(user.role),
         createdAt: user.createdAt,
         isActive: user.isActive,
+        avatarUrl: (user as any).avatarUrl ?? undefined,
       }
     } catch (error) {
       console.error('[Database] Failed to get user by ID:', error)
@@ -246,6 +248,7 @@ export class DatabaseService {
         createdAt: user.createdAt,
         lastLogin: user.updatedAt,
         isActive: user.isActive,
+        avatarUrl: (user as any).avatarUrl ?? undefined,
       }))
     } catch (error) {
       console.error('[Database] Failed to get users:', error)
@@ -311,6 +314,8 @@ export class DatabaseService {
         isActive: user.isActive,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
+        avatarUrl: (user as any).avatarUrl ?? undefined,
+        permissions: this.mapRolePermissions(user.role),
       }
     } catch (error) {
       console.error('[Database] Failed to update user:', error)
@@ -786,6 +791,7 @@ export class DatabaseService {
         data: {
           title: taskData.title,
           description: taskData.description || "",
+          operatorNote: taskData.operatorNote || null,
           assignedTo: taskData.assignedTo,
           assignedBy: taskData.assignedBy,
           status: taskData.status || "pending",
@@ -794,19 +800,7 @@ export class DatabaseService {
           dueDate: taskData.dueDate ? new Date(taskData.dueDate) : null,
           checklist: taskData.checklist || [],
         },
-        select: {
-          id: true,
-          title: true,
-          description: true,
-          assignedTo: true,
-          assignedBy: true,
-          status: true,
-          priority: true,
-          dueDate: true,
-          completedAt: true,
-          checklist: true,
-          createdAt: true,
-          updatedAt: true,
+        include: {
           assignedToUser: { select: { name: true, email: true } },
           assignedByUser: { select: { name: true, email: true } },
         }
@@ -822,19 +816,7 @@ export class DatabaseService {
     try {
       const tasks = await prisma.task.findMany({
         orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          title: true,
-          description: true,
-          assignedTo: true,
-          assignedBy: true,
-          status: true,
-          priority: true,
-          dueDate: true,
-          completedAt: true,
-          checklist: true,
-          createdAt: true,
-          updatedAt: true,
+        include: {
           assignedToUser: { select: { name: true, email: true } },
           assignedByUser: { select: { name: true, email: true } },
         }
@@ -851,19 +833,7 @@ export class DatabaseService {
       const tasks = await prisma.task.findMany({
         where: { assignedTo: userId },
         orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          title: true,
-          description: true,
-          assignedTo: true,
-          assignedBy: true,
-          status: true,
-          priority: true,
-          dueDate: true,
-          completedAt: true,
-          checklist: true,
-          createdAt: true,
-          updatedAt: true,
+        include: {
           assignedToUser: { select: { name: true, email: true } },
           assignedByUser: { select: { name: true, email: true } },
         }
@@ -879,19 +849,7 @@ export class DatabaseService {
     try {
       const task = await prisma.task.findUnique({
         where: { id: taskId },
-        select: {
-          id: true,
-          title: true,
-          description: true,
-          assignedTo: true,
-          assignedBy: true,
-          status: true,
-          priority: true,
-          dueDate: true,
-          completedAt: true,
-          checklist: true,
-          createdAt: true,
-          updatedAt: true,
+        include: {
           assignedToUser: { select: { name: true, email: true } },
           assignedByUser: { select: { name: true, email: true } }
         }
@@ -906,11 +864,6 @@ export class DatabaseService {
   async updateTask(taskId: string, updates: any): Promise<any[]> {
     try {
       const dataToUpdate: any = { ...updates }
-
-      // فیلد ناسازگار را حذف کن
-      if (typeof dataToUpdate.operatorNote !== 'undefined') {
-        delete dataToUpdate.operatorNote
-      }
 
       // اگر وضعیت به completed تغییر کرد، completedAt را ست کن؛ در غیر این صورت null شود
       if (typeof updates?.status === 'string') {

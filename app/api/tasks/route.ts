@@ -4,6 +4,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/database"
 import { validateAuth } from "@/lib/auth-middleware"
+import { broadcast } from "@/lib/event-bus"
 
 
 export async function POST(request: NextRequest) {
@@ -31,6 +32,9 @@ export async function POST(request: NextRequest) {
       status: taskData.status || "pending",
       priority: taskData.priority || "medium",
     })
+
+    // Broadcast realtime event
+    broadcast("task:created", newTask)
 
     // log activity for task creation
     try { 

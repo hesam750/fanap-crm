@@ -303,7 +303,7 @@ import { AuthService } from "@/lib/auth"
                       <div className="grid grid-cols-1 gap-2">
                         <div className="space-y-1">
                           <div className="text-sm">وضعیت</div>
-                          {canEdit ? (
++                          {canEdit ? (
                             <Select value={String(statusDraft)} onValueChange={(v) => setStatusDraft(v as any)}>
                               <SelectTrigger className="w-full">
                                 <SelectValue placeholder="انتخاب وضعیت" />
@@ -325,7 +325,7 @@ import { AuthService } from "@/lib/auth"
 
                         <div className="space-y-1">
                           <div className="text-sm">توضیحات</div>
-                          {canEdit ? (
+                          {canEdit && currentUser?.role !== "operator" ? (
                             <Textarea value={descDraft} onChange={(e) => setDescDraft(e.target.value)} rows={4} />
                           ) : (
                             <div className="min-h-[3rem] p-2 rounded border bg-muted/30 text-sm whitespace-pre-wrap">
@@ -334,7 +334,7 @@ import { AuthService } from "@/lib/auth"
                           )}
                         </div>
 
-                        {canEdit ? (
+                        {canEdit && currentUser?.role === "operator" ? (
                           <div className="space-y-1">
                             <div className="text-sm">یادداشت اپراتور</div>
                             <Textarea

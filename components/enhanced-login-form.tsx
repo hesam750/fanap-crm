@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator"
 import { AuthService } from "@/lib/auth"
 import { Eye, EyeOff, Loader2, Shield, User, Lock, AlertCircle, CheckCircle } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 
 interface LoginFormProps {
@@ -29,6 +30,10 @@ export function EnhancedLoginForm({ onLogin }: LoginFormProps) {
   const [error, setError] = useState("")
   const [selectedDemo, setSelectedDemo] = useState<string | null>(null)
   const { toast } = useToast()
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+
+  // instantiate email change handler with component state setters
+  const handleEmailChange = createHandleEmailChange(setEmail, setAvatarPreview)
 
   // const demoAccounts = [
   //   {
@@ -145,6 +150,15 @@ export function EnhancedLoginForm({ onLogin }: LoginFormProps) {
           <CardHeader className="space-y-1 pb-4">
             <CardTitle className="text-xl font-semibold text-center">ورود به سیستم</CardTitle>
             <CardDescription className="text-center">لطفاً اطلاعات ورود خود را وارد کنید</CardDescription>
+            {/* Big avatar preview under the description */}
+            <div className="flex justify-center pt-3 ">
+              <Avatar className="h-24 w-24 ring-2 ring-primary/40 shadow-sm">
+                <AvatarImage src={avatarPreview || "/placeholder-user.jpg"} alt="avatar" />
+                <AvatarFallback className="text-3xl">
+                  {email ? email.charAt(0).toUpperCase() : "A"}
+                </AvatarFallback>
+              </Avatar>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -158,7 +172,7 @@ export function EnhancedLoginForm({ onLogin }: LoginFormProps) {
                     id="email"
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => handleEmailChange(e.target.value)}
                     placeholder="example@company.com"
                     className="pr-10 transition-all duration-200 focus:ring-2 focus:ring-primary/20"
                     required
@@ -279,4 +293,25 @@ export function EnhancedLoginForm({ onLogin }: LoginFormProps) {
       </div>
     </div>
   )
+}
+
+const createHandleEmailChange = (setEmail: (v: string) => void, setAvatarPreview: (v: string | null) => void) => async (value: string) => {
+  setEmail(value)
+  // Try to fetch user by email for avatar preview
+  try {
+    if (value && value.includes("@")) {
+      const res = await fetch(`/api/users?email=${encodeURIComponent(value)}`)
+      if (res.ok) {
+        const data = await res.json()
+        const url = data?.user?.avatarUrl as string | undefined
+        setAvatarPreview(url || null)
+      } else {
+        setAvatarPreview(null)
+      }
+    } else {
+      setAvatarPreview(null)
+    }
+  } catch {
+    setAvatarPreview(null)
+  }
 }

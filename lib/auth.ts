@@ -54,7 +54,17 @@ export class AuthService {
     if (!this.currentUser) {
       const stored = localStorage.getItem("currentUser")
       if (stored) {
-        this.currentUser = JSON.parse(stored)
+        const parsed = JSON.parse(stored)
+        // Ensure permissions is always an array to avoid runtime errors in UI
+        if (!Array.isArray(parsed.permissions)) {
+          parsed.permissions = parsed.role === "root" ? ["*"] : []
+        }
+        this.currentUser = parsed
+      }
+    } else {
+      // Normalize in-memory user as well
+      if (!Array.isArray(this.currentUser.permissions)) {
+        this.currentUser.permissions = this.currentUser.role === "root" ? ["*"] : []
       }
     }
     return this.currentUser
@@ -94,14 +104,14 @@ export class AuthService {
     }
 
     // Root has all permissions
-    if (user.role === "root" || user.permissions.includes("*")) {
+    if (user.role === "root" || user.permissions?.includes("*")) {
       return true
     }
 
     // Normalize requested permission and user's permissions
     const requested = this.normalizePermission(permission)
     const normalizedUserPerms = new Set(
-      user.permissions.map((p) => this.normalizePermission(p))
+      user.permissions = (user.permissions ?? []).map((p) => this.normalizePermission(p))
     )
 
     return normalizedUserPerms.has(requested)

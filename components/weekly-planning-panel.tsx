@@ -216,21 +216,21 @@ export function WeeklyPlanningPanel({
   }
 
   // ثبت تغییرات توسط اپراتور
-  const handleOperatorSubmit = async () => {
-    if (!selectedTask || !onUpdateTask) return
-    try {
-      await onUpdateTask(selectedTask.id, {
-        status: operatorStatus,
-        description: operatorDescription,
-      })
+  // const handleOperatorSubmit = async () => {
+  //   if (!selectedTask || !onUpdateTask) return
+  //   try {
+  //     await onUpdateTask(selectedTask.id, {
+  //       status: operatorStatus,
+  //       description: operatorDescription,
+  //     })
     
-      toast({ title: "موفقیت", description: "وضعیت وظیفه به‌روزرسانی شد", variant: "success" })
-      onRefresh?.()
-    } catch (error) {
-      console.error("Failed to update operator status:", error)
-      toast({ title: "خطا", description: "خطا در ثبت وضعیت توسط اپراتور", variant: "destructive" })
-    }
-  }
+  //     toast({ title: "موفقیت", description: "وضعیت وظیفه به‌روزرسانی شد", variant: "success" })
+  //     onRefresh?.()
+  //   } catch (error) {
+  //     console.error("Failed to update operator status:", error)
+  //     toast({ title: "خطا", description: "خطا در ثبت وضعیت توسط اپراتور", variant: "destructive" })
+  //   }
+  // }
 
   return (
     <div className="space-y-6" dir="rtl">
