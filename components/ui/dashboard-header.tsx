@@ -31,6 +31,8 @@ export function DashboardHeader({ user, alertCount, onLogout }: DashboardHeaderP
         return "اپراتور"
       case "supervisor":
         return "ناظر"
+      case "monitor":
+        return "نمایشگر"
       default:
         return role
     }

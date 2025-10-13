@@ -38,7 +38,10 @@ export function TankCard({ tank, onUpdate }: TankCardProps) {
     return "خوب"
   }
 
-  const liters = Math.round((tank.currentLevel / 100) * tank.capacity)
+  // تبدیل لیتر: در حالت ویرایش از tempLevel استفاده می‌کنیم تا تبدیل لحظه‌ای باشد
+  const litersCurrent = Math.round((tank.currentLevel / 100) * tank.capacity)
+  const litersTemp = Math.round(((tempLevel ?? tank.currentLevel) / 100) * tank.capacity)
+  const displayLiters = litersTemp
 
   const clamp = (val: number) => Math.max(0, Math.min(100, Math.round(val)))
 
@@ -80,7 +83,7 @@ export function TankCard({ tank, onUpdate }: TankCardProps) {
           </div>
           <Progress value={tank.currentLevel} className="h-3" />
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{liters.toLocaleString("fa-IR")} لیتر</span>
+            <span>{displayLiters.toLocaleString("fa-IR")} لیتر</span>
             <span>ظرفیت: {tank.capacity.toLocaleString("fa-IR")} لیتر</span>
           </div>
         </div>
@@ -100,6 +103,10 @@ export function TankCard({ tank, onUpdate }: TankCardProps) {
               onValueChange={(v) => setTempLevel(clamp(v[0]))}
               className="h-6"
             />
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>معادل حجمی</span>
+              <span className="font-medium">{litersTemp.toLocaleString("fa-IR")} لیتر</span>
+            </div>
           </div>
         )}
 

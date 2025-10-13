@@ -1,127 +1,75 @@
 import { NextRequest, NextResponse } from "next/server"
-import { db } from "@/lib/database"
 import { validateAuth } from "@/lib/auth-middleware"
-import { unstable_cache } from "next/cache"
-
-// تعریف تایپ‌های interface
-interface AnalyticsRequest {
-  tankIds: string[];
-  generatorIds: string[];
-  period: string;
-}
-
-interface CacheParams {
-  id: string;
-  type: 'tank' | 'generator';
-  period?: number;
-}
-
-// تعریف تایپ برای نتایج
-interface TrendResult {
-  trend: "increasing" | "decreasing" | "stable";
-  changeRate: number;
-  currentValue: number;
-  error?: string;
-}
-
-interface PredictionResult {
-  predictedValue: number;
-  confidence: number;
-  timestamp: string;
-  error?: string;
-}
-
-// کش برای بهبود عملکرد
-const getCachedTrends = unstable_cache(
-  async ({ id, type, period = 24 }: CacheParams): Promise<TrendResult> => {
-    if (type === 'tank') {
-      return db.calculateTankTrends(id, period)
-    } else {
-      return db.calculateGeneratorTrends(id, period)
-    }
-  },
-  ['analytics-trends'],
-  { revalidate: 300 }
-)
-
-const getCachedPredictions = unstable_cache(
-  async ({ id, type }: Omit<CacheParams, 'period'>): Promise<PredictionResult> => {
-    if (type === 'tank') {
-      return db.calculateTankPrediction(id)
-    } else {
-      return db.calculateGeneratorPrediction(id)
-    }
-  },
-  ['analytics-predictions'],
-  { revalidate: 600 }
-)
+import { analytics } from "@/lib/analytics-service"
+import { DatabaseService } from "@/lib/database"
 
 export async function POST(request: NextRequest) {
+  // احراز هویت (در صورت نیاز می‌توان relaxed کرد برای مانیتور عمومی)
   const user = await validateAuth(request)
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   try {
-    const { tankIds = [], generatorIds = [], period = "24" }: AnalyticsRequest = await request.json()
-    const periodNum = parseInt(period)
+    const body = await request.json()
+    const tankIds: string[] = Array.isArray(body?.tankIds) ? body.tankIds : []
+    const generatorIds: string[] = Array.isArray(body?.generatorIds) ? body.generatorIds : []
+    const period: string = String(body?.period ?? "168") // hours
+    const days = Math.max(1, Math.ceil(Number(period) / 24))
 
-    // اجرای موازی همه درخواست‌ها
-    const [tankTrends, generatorTrends, tankPredictions, generatorPredictions] = await Promise.all([
-      // ترندهای تانک
-      Promise.allSettled(
-        tankIds.map((id: string) => getCachedTrends({ id, type: 'tank', period: periodNum }))
-      ),
-      // ترندهای ژنراتور
-      Promise.allSettled(
-        generatorIds.map((id: string) => getCachedTrends({ id, type: 'generator', period: periodNum }))
-      ),
-      // پیش‌بینی‌های تانک
-      Promise.allSettled(
-        tankIds.map((id: string) => getCachedPredictions({ id, type: 'tank' }))
-      ),
-      // پیش‌بینی‌های ژنراتور
-      Promise.allSettled(
-        generatorIds.map((id: string) => getCachedPredictions({ id, type: 'generator' }))
-      )
-    ])
+    const db = DatabaseService.getInstance()
+    const [allTanks, allGenerators] = await Promise.all([db.getTanks(), db.getGenerators()])
 
-    // پردازش نتایج
-    const processResults = <T>(
-      results: PromiseSettledResult<T>[], 
-      ids: string[]
-    ): Record<string, T> => {
-      return Object.fromEntries(
-        results.map((result, index) => [
-          ids[index],
-          result.status === 'fulfilled' ? result.value : {
-            error: "Failed to load data",
-            trend: "stable",
-            changeRate: 0
-          } as T
-        ])
-      )
+    const tankMap = new Map(allTanks.map((t) => [t.id, t]))
+    const genMap = new Map(allGenerators.map((g) => [g.id, g]))
+
+    // ترندهای مصرف برای هر موجودیت
+    const trendEntries: Array<[string, { trend: "increasing" | "decreasing" | "stable"; changeRate: number; currentValue: number }]> = []
+
+    // تانک‌ها
+    for (const id of tankIds) {
+      const t = tankMap.get(id)
+      if (!t) continue
+      const trend = await analytics.calculateConsumptionTrends(id, "tank", days)
+      const mappedTrend: "increasing" | "decreasing" | "stable" = trend.trend === "up" ? "increasing" : trend.trend === "down" ? "decreasing" : "stable"
+      trendEntries.push([
+        id,
+        {
+          trend: mappedTrend,
+          changeRate: Number(trend.percentage?.toFixed?.(2) ?? trend.percentage ?? 0),
+          currentValue: t.currentLevel,
+        },
+      ])
     }
 
-    const response = {
-      trends: {
-        ...processResults<TrendResult>(tankTrends, tankIds),
-        ...processResults<TrendResult>(generatorTrends, generatorIds)
-      },
-      predictions: {
-        ...processResults<PredictionResult>(tankPredictions, tankIds),
-        ...processResults<PredictionResult>(generatorPredictions, generatorIds)
-      },
-      timestamp: new Date().toISOString()
+    // ژنراتورها
+    for (const id of generatorIds) {
+      const g = genMap.get(id)
+      if (!g) continue
+      const trend = await analytics.calculateConsumptionTrends(id, "generator", days)
+      const mappedTrend: "increasing" | "decreasing" | "stable" = trend.trend === "up" ? "increasing" : trend.trend === "down" ? "decreasing" : "stable"
+      trendEntries.push([
+        id,
+        {
+          trend: mappedTrend,
+          changeRate: Number(trend.percentage?.toFixed?.(2) ?? trend.percentage ?? 0),
+          currentValue: g.currentLevel,
+        },
+      ])
     }
 
-    return NextResponse.json(response)
+    const trends = Object.fromEntries(trendEntries)
 
-  } catch (error) {
-    console.error("[BULK_ANALYTICS]", error)
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    )
+    // پیش‌بینی‌های تجمیعی
+    const bulkPred = await analytics.getBulkPredictiveAnalytics(tankIds, generatorIds)
+
+    return NextResponse.json({
+      trends,
+      predictions: bulkPred,
+      timestamp: new Date().toISOString(),
+    })
+  } catch (error: any) {
+    console.error("[API] /api/analytics/bulk error:", error)
+    return NextResponse.json({ error: error?.message || "Internal Server Error" }, { status: 500 })
   }
 }

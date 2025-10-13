@@ -245,8 +245,192 @@ function convertToCSV(_data: unknown): string {
 }
 
 async function generatePDF(_data: unknown, _reportType: string): Promise<Buffer> {
-  // تولید PDF - برای نمونه محتوای ساده باز می‌گردد
-  return Buffer.from("PDF content")
+  // تولید PDF جامع با ساختار چند صفحه‌ای و بخش‌بندی
+  const data = _data as any
+  const reportType = _reportType
+
+  const lines: string[] = []
+  const now = new Date()
+  const headerTitleMap: Record<string, string> = {
+    summary: "گزارش خلاصه",
+    analytics: "گزارش تحلیلی",
+    export: "گزارش خروجی داده‌ها",
+  }
+  const sep = "----------------------------------------------"
+
+  lines.push("سامانه مدیریت مخازن و هشدارها")
+  lines.push(headerTitleMap[reportType] || "گزارش")
+  lines.push(`تاریخ تهیه: ${new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short', timeStyle: 'short' }).format(now)}`)
+  lines.push("")
+
+  try {
+    if (reportType === 'summary') {
+      lines.push("بخش: خلاصه وضعیت")
+      lines.push(sep)
+      if (Array.isArray(data)) {
+        data.forEach((row: any, idx: number) => {
+          const name = row.name ?? row.title ?? `مورد ${idx + 1}`
+          const value = row.currentLevel ?? row.value ?? row.count ?? row.total ?? '-'
+          const capacity = row.capacity != null ? ` / ظرفیت: ${row.capacity}` : ''
+          const trend = row.usageTrend ? ` / روند: ${row.usageTrend}` : ''
+          lines.push(`${name}: سطح فعلی ${value}${capacity}${trend}`)
+        })
+      } else if (data && typeof data === 'object') {
+        Object.keys(data).forEach((key) => {
+          const v = data[key]
+          lines.push(`${key}: ${typeof v === 'object' ? JSON.stringify(v) : v}`)
+        })
+      }
+    } else if (reportType === 'analytics') {
+      lines.push("بخش: تحلیل‌ها")
+      lines.push(sep)
+      const aggKeys = [
+        'totalEntities',
+        'averageUsage',
+        'peakUsageTime',
+        'lowUsageTime',
+      ]
+      if (data?.statistics) {
+        lines.push("آمار کل")
+        lines.push(sep)
+        aggKeys.forEach((k) => {
+          if (data.statistics[k] !== undefined) {
+            lines.push(`${k}: ${data.statistics[k]}`)
+          }
+        })
+      }
+      if (data?.trends) {
+        lines.push("")
+        lines.push("روندها")
+        lines.push(sep)
+        Object.keys(data.trends).forEach((k) => {
+          lines.push(`${k}: ${data.trends[k]}`)
+        })
+      }
+      if (data?.predictions) {
+        lines.push("")
+        lines.push("پیش‌بینی‌ها")
+        lines.push(sep)
+        Object.keys(data.predictions).forEach((k) => {
+          lines.push(`${k}: ${data.predictions[k]}`)
+        })
+      }
+      if (Array.isArray(data?.alerts)) {
+        lines.push("")
+        lines.push("هشدارهای مرتبط")
+        lines.push(sep)
+        data.alerts.slice(0, 100).forEach((a: any, i: number) => {
+          const label = a.title ?? a.message ?? `هشدار ${i + 1}`
+          const sev = a.severity ?? a.level ?? ''
+          const ts = a.timestamp ? new Date(a.timestamp).toLocaleString('fa-IR') : ''
+          lines.push(`${label}${sev ? ' | شدت: ' + sev : ''}${ts ? ' | زمان: ' + ts : ''}`)
+        })
+      }
+    } else if (reportType === 'export') {
+      lines.push("بخش: خروجی داده‌های خام")
+      lines.push(sep)
+      const rows: any[] = Array.isArray(data) ? data : data?.rows ?? []
+      const headers: string[] = Array.isArray(data?.headers)
+        ? data.headers
+        : rows.length
+        ? Object.keys(rows[0])
+        : []
+      if (headers.length) {
+        lines.push(headers.join(' , '))
+      }
+      rows.forEach((row, i) => {
+        const vals = headers.map((h) => {
+          const v = row[h]
+          return typeof v === 'object' ? JSON.stringify(v) : String(v ?? '')
+        })
+        lines.push(vals.join(' , '))
+      })
+    } else {
+      lines.push("داده‌های گزارش")
+      lines.push(sep)
+      lines.push(typeof data === 'string' ? data : JSON.stringify(data, null, 2))
+    }
+  } catch (e) {
+    lines.push("")
+    lines.push("خطا در آماده‌سازی گزارش برای PDF")
+    lines.push(String(e))
+  }
+
+  // رندر خطوط به PDF ساده چند صفحه‌ای
+  const pageLineLimit = 45
+  const pages: string[][] = []
+  for (let i = 0; i < lines.length; i += pageLineLimit) {
+    pages.push(lines.slice(i, i + pageLineLimit))
+  }
+  if (pages.length === 0) pages.push(["(بدون محتوا)"])
+
+  let pdf = "%PDF-1.4\n"
+  const objects: string[] = []
+  const offsets: number[] = []
+
+  const addObject = (obj: string) => {
+    offsets.push(Buffer.byteLength(pdf, 'utf-8'))
+    const index = objects.length + 1
+    pdf += `${index} 0 obj\n${obj}\nendobj\n`
+    objects.push(obj)
+  }
+
+  // فونت استاندارد
+  addObject("<< /Type /Font /Subtype /Type1 /Name /F1 /BaseFont /Helvetica >>") // 1
+
+  const pageObjIdxs: number[] = []
+  const contentObjIdxs: number[] = []
+
+  pages.forEach((pageLines) => {
+    let stream = "BT\n/F1 12 Tf\n1 0 0 1 50 800 Tm\n"
+    pageLines.forEach((line) => {
+      const escaped = String(line)
+        .replace(/\\\\/g, "\\\\")
+        .replace(/\(/g, "\\(")
+        .replace(/\)/g, "\\)")
+      stream += `(${escaped}) Tj\n0 -16 Td\n`
+    })
+    stream += "ET"
+    const streamContent = Buffer.from(stream, 'utf-8')
+    addObject(`<< /Length ${streamContent.length} >>\nstream\n${stream}\nendstream`) // content
+    const contentIdx = objects.length
+    contentObjIdxs.push(contentIdx)
+
+    addObject(`<< /Type /Page /Parent 0 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R >> >> /Contents ${contentIdx} 0 R >>`)
+    pageObjIdxs.push(objects.length)
+  })
+
+  // شیء Pages
+  const kids = pageObjIdxs.map((i) => `${i} 0 R`).join(' ')
+  addObject(`<< /Type /Pages /Kids [${kids}] /Count ${pageObjIdxs.length} >>`)
+  const pagesIdx = objects.length
+
+  // بازنویسی Page با Parent صحیح
+  const fixedPageIdxs: number[] = []
+  pageObjIdxs.forEach((_, i) => {
+    const contentIdx = contentObjIdxs[i]
+    addObject(`<< /Type /Page /Parent ${pagesIdx} 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R >> >> /Contents ${contentIdx} 0 R >>`)
+    fixedPageIdxs.push(objects.length)
+  })
+
+  // Catalog
+  addObject(`<< /Type /Catalog /Pages ${pagesIdx} 0 R >>`)
+  const catalogIdx = objects.length
+
+  // xref
+  const xrefOffset = Buffer.byteLength(pdf, 'utf-8')
+  const count = objects.length
+  let xref = `xref\n0 ${count + 1}\n`
+  xref += "0000000000 65535 f \n"
+  for (let i = 0; i < count; i++) {
+    const off = offsets[i]
+    const padded = String(off).padStart(10, '0')
+    xref += `${padded} 00000 n \n`
+  }
+  const trailer = `trailer\n<< /Size ${count + 1} /Root ${catalogIdx} 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`
+  pdf += xref + trailer
+
+  return Buffer.from(pdf, 'utf-8')
 }
 
 async function calculateUsageTrend(history: Array<{ level: number }>): Promise<string> {

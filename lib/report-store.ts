@@ -1,60 +1,51 @@
 
 
-import crypto from "crypto"
+import { randomUUID } from "crypto"
 
-export type ReportContent = string | Buffer
+type ReportContent = Uint8Array | Buffer
 
 export interface StoredReport {
   id: string
-  content: ReportContent
+  content: Uint8Array
   contentType: string
   filename: string
   createdAt: number
-  expiresAt: number
 }
 
-const STORE = new Map<string, StoredReport>()
-const DEFAULT_TTL_MS = 10 * 60 * 1000 // 10 دقیقه
+// Simple in-memory store for generated reports
+const store = new Map<string, StoredReport>()
 
-export function saveReport(input: {
-  content: ReportContent
-  contentType: string
-  filename: string
-  ttlMs?: number
-}): string {
-  const id = crypto.randomUUID()
-  const now = Date.now()
-  const expiresAt = now + (input.ttlMs ?? DEFAULT_TTL_MS)
-  const report: StoredReport = {
+export function saveReport(input: { content: ReportContent; contentType: string; filename: string }): string {
+  const id = typeof randomUUID === "function" ? randomUUID() : Math.random().toString(36).slice(2)
+  const content = input.content instanceof Uint8Array ? input.content : new Uint8Array(input.content)
+  const record: StoredReport = {
     id,
-    content: input.content,
+    content,
     contentType: input.contentType,
     filename: input.filename,
-    createdAt: now,
-    expiresAt,
+    createdAt: Date.now(),
   }
-  STORE.set(id, report)
+  store.set(id, record)
   return id
 }
 
-export function getReport(id: string): StoredReport | null {
-  cleanup()
-  const report = STORE.get(id) || null
-  if (!report) return null
-  if (report.expiresAt < Date.now()) {
-    STORE.delete(id)
-    return null
-  }
-  return report
+export function getReport(id: string): StoredReport | undefined {
+  return store.get(id)
 }
 
-export function deleteReport(id: string): void {
-  STORE.delete(id)
+export function removeReport(id: string): boolean {
+  return store.delete(id)
 }
 
-function cleanup(): void {
+// Optional maintenance: purge reports older than given ttl (ms)
+export function purgeExpired(ttlMs: number): number {
   const now = Date.now()
-  for (const [id, rep] of STORE.entries()) {
-    if (rep.expiresAt < now) STORE.delete(id)
+  let removed = 0
+  for (const [id, rec] of store.entries()) {
+    if (now - rec.createdAt > ttlMs) {
+      store.delete(id)
+      removed++
+    }
   }
+  return removed
 }

@@ -18,9 +18,11 @@ import { AuthService } from "@/lib/auth"
     onUpdateChecklist?: (taskId: string, checklistItemId: string, completed: boolean) => void
     // New: allow updating a task (status/description)
     onUpdateTask?: (taskId: string, updates: Partial<Task>) => Promise<void> | void
+    // New: allow deleting a task (root only in UI)
+    onDeleteTask?: (taskId: string) => Promise<void> | void
   }
 
-  export function TasksPanel({ tasks, onCompleteTask, onUpdateChecklist, onUpdateTask }: TasksPanelProps) {
+  export function TasksPanel({ tasks, onCompleteTask, onUpdateChecklist, onUpdateTask, onDeleteTask }: TasksPanelProps) {
     const auth = AuthService.getInstance()
     const currentUser = auth.getCurrentUser()
     const canComplete = auth.hasPermission("complete-task")
@@ -171,7 +173,13 @@ import { AuthService } from "@/lib/auth"
     }
 
     const isAssignee = !!(currentUser && selectedTask && selectedTask.assignedTo === currentUser.id)
-    const canEdit = !!isAssignee
+    const canEdit = !!(
+      isAssignee ||
+      currentUser?.role === "root" ||
+      auth.isManager() ||
+      auth.isSupervisor() ||
+      auth.isSuperAdmin()
+    )
 
     return (
       <Card>
@@ -263,6 +271,22 @@ import { AuthService } from "@/lib/auth"
                     >
                       تکمیل وظیفه
                     </Button>
+                  )}
+
+                  {/* Root-only actions: delete and edit */}
+                  {currentUser?.role === "root" && (
+                    <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => onDeleteTask?.(task.id)}
+                      >
+                        حذف
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => openModal(task)}>
+                        ویرایش
+                      </Button>
+                    </div>
                   )}
                 </div>
               ))}

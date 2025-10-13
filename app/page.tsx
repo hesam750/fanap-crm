@@ -350,6 +350,23 @@ export default function Home() {
     }
   }
 
+  // NEW: delete a normal task (root-only in UI)
+  const handleDeleteTask = async (taskId: string) => {
+    // Optimistic removal
+    const snapshot = tasks
+    setTasks((prev) => prev.filter((t) => t.id !== taskId))
+
+    try {
+      await apiClient.deleteTask(taskId)
+      // Minimal sync with server state
+      await loadTasksOnly()
+    } catch (error) {
+      console.error("Failed to delete task:", error)
+      // Rollback on failure
+      setTasks(snapshot)
+    }
+  }
+
   const handleRefreshData = async () => {
     // Minimal refresh: only reload tasks and weekly tasks to avoid heavy full data fetch
     await Promise.all([loadTasksOnly(), loadWeeklyTasksOnly()])
@@ -664,6 +681,7 @@ export default function Home() {
                             onCompleteTask={handleCompleteTask}
                             onUpdateChecklist={handleUpdateChecklist}
                             onUpdateTask={handleUpdateTask}
+                            onDeleteTask={handleDeleteTask}
                           />
                         </motion.div>
                       </div>

@@ -111,6 +111,8 @@ export function ProfileManagement({ user, onUserUpdate }: ProfileManagementProps
         return "اپراتور"
       case "supervisor":
         return "ناظر"
+      case "monitor":
+        return "نمایشگر"
       default:
         return "نامشخص"
     }

@@ -178,6 +178,11 @@ export class AuthService {
     return user?.role === "supervisor"
   }
 
+  isMonitor(): boolean {
+    const user = this.getCurrentUser()
+    return user?.role === "monitor"
+  }
+
   getRoleDisplayName(role?: string): string {
     const userRole = role || this.getCurrentUser()?.role
     switch (userRole) {
@@ -189,6 +194,8 @@ export class AuthService {
         return "اپراتور"
       case "supervisor":
         return "ناظر"
+      case "monitor":
+        return "نمایشگر"
       default:
         return "نامشخص"
     }
@@ -226,6 +233,15 @@ export class AuthService {
         "add_tanks",  
         "add_generators", 
         "update"
+      ]
+    }
+
+    // نمایشگر: فقط مشاهده‌گر، بدون اکشن عملیاتی
+    if (user.role === "monitor") {
+      return [
+        "view_dashboard",
+        "view_reports",
+        "view_analytics",
       ]
     }
 

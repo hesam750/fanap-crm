@@ -24,6 +24,7 @@ import {
   ReferenceLine,
 } from "recharts"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Progress } from "@/components/ui/progress"
 import { apiClient } from "@/lib/api-client"
 import type { Tank, Generator, Alert } from "@/lib/types"
 
@@ -34,7 +35,7 @@ interface AnalyticsChartsProps {
 }
 
 // Summary API record shape
-interface SummaryRecord {
+interface SummaryRecord {                 
   id: string
   entityType: "tank" | "generator"
   entityId: string
@@ -89,6 +90,10 @@ export function AnalyticsCharts({ tanks, generators, alerts }: AnalyticsChartsPr
     fuelAverage: { label: "میانگین سوخت", color: "oklch(var(--chart-1))" },
     waterAverage: { label: "میانگین آب", color: "oklch(var(--chart-2))" },
     count: { label: "تعداد" },
+    critical: { label: "بحرانی", color: "oklch(var(--destructive))" },
+    high: { label: "بالا", color: "oklch(var(--chart-3))" },
+    medium: { label: "متوسط", color: "oklch(var(--chart-4))" },
+    low: { label: "پایین", color: "oklch(var(--chart-5))" },
   } as const
 
   const buildDateBuckets = useCallback((days: number) => {
@@ -172,6 +177,39 @@ export function AnalyticsCharts({ tanks, generators, alerts }: AnalyticsChartsPr
     loadAnalytics()
   }, [loadAnalytics])
 
+  // Alerts trend over selected window
+  const alertTrendData = useMemo(() => {
+    const buckets = buildDateBuckets(timeRange)
+    const byDate: Record<string, { critical: number; high: number; medium: number; low: number }> = {}
+    buckets.forEach((b) => (byDate[b.key] = { critical: 0, high: 0, medium: 0, low: 0 }))
+    alerts.forEach((a) => {
+      const k = new Date((a as any).createdAt).toISOString().slice(0, 10)
+      if (!byDate[k]) return
+      const sev = (a as any).severity || "low"
+      if (sev === "critical") byDate[k].critical++
+      else if (sev === "high") byDate[k].high++
+      else if (sev === "medium") byDate[k].medium++
+      else byDate[k].low++
+    })
+    return buckets.map((b) => ({
+      date: b.label,
+      critical: byDate[b.key].critical,
+      high: byDate[b.key].high,
+      medium: byDate[b.key].medium,
+      low: byDate[b.key].low,
+    }))
+  }, [alerts, timeRange, buildDateBuckets])
+
+  // Lowest level tanks ranking
+  const lowLevelTanks = useMemo(() => {
+    const list = [...tanks]
+    list.sort((a, b) => a.currentLevel - b.currentLevel)
+    return list.slice(0, Math.min(6, list.length)).map((t) => {
+      const liters = Math.round((t.currentLevel / 100) * t.capacity)
+      return { id: t.id, name: t.name, level: t.currentLevel, liters, capacity: t.capacity, type: t.type }
+    })
+  }, [tanks])
+
   return (
     <div className="space-y-6">
       {/* Top controls */}
@@ -239,6 +277,38 @@ export function AnalyticsCharts({ tanks, generators, alerts }: AnalyticsChartsPr
           </CardContent>
         </Card>
 
+        {/* Trends overview (uses bulk trends snapshot) */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>نمای کلی روندها</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {Object.keys(trends).length === 0 ? (
+              <div className="text-xs text-muted-foreground">داده‌ای برای روندها در دسترس نیست</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {Object.entries(trends)
+                  .slice(0, 8)
+                  .map(([id, t]) => {
+                    const name = tanks.find((x) => x.id === id)?.name || generators.find((x) => x.id === id)?.name || id
+                    const cls = t.trend === "increasing" ? "text-red-600" : t.trend === "decreasing" ? "text-green-600" : "text-gray-600"
+                    const label = t.trend === "increasing" ? "افزایش مصرف" : t.trend === "decreasing" ? "کاهش مصرف" : "پایدار"
+                    return (
+                      <div key={id} className="flex items-center justify-between py-1 border-b last:border-b-0">
+                        <div className="text-sm">
+                          <span className="font-medium">{name}</span>
+                          <span className="mx-2 text-muted-foreground">—</span>
+                          <span className={cls}>{label}</span>
+                        </div>
+                        <div className="text-xs">{t.changeRate.toFixed(2)}%</div>
+                      </div>
+                    )
+                  })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Generator status (horizontal bar) */}
         <Card>
           <CardHeader>
@@ -257,43 +327,97 @@ export function AnalyticsCharts({ tanks, generators, alerts }: AnalyticsChartsPr
           </CardContent>
         </Card>
 
-        {/* Tank distribution (donut) */}
-        <Card>
+        {/* Alerts trend over time (stacked area) */}
+        <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>توزیع مخازن</CardTitle>
+            <CardTitle>روند هشدارها در زمان ({timeRange} روز گذشته)</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-[260px]">
-              <PieChart>
-                <Pie data={tankDistribution} cx="50%" cy="50%" innerRadius={60} outerRadius={100} dataKey="value" paddingAngle={5}>
-                  {tankDistribution.map((entry, idx) => (
-                    <Cell key={`cell-${idx}`} fill={entry.fill} />
-                  ))}
-                </Pie>
+            <ChartContainer config={chartConfig} className="h-[280px]">
+              <AreaChart data={alertTrendData} margin={{ left: 12, right: 12 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis allowDecimals={false} />
                 <ChartTooltip content={<ChartTooltipContent />} />
                 <ChartLegend content={<ChartLegendContent />} />
-              </PieChart>
+                <Area type="monotone" dataKey="critical" name="بحرانی" stroke="oklch(var(--destructive))" fill="oklch(var(--destructive))" stackId="alerts" strokeWidth={2} isAnimationActive />
+                <Area type="monotone" dataKey="high" name="بالا" stroke="oklch(var(--chart-3))" fill="oklch(var(--chart-3))" stackId="alerts" strokeWidth={2} isAnimationActive />
+                <Area type="monotone" dataKey="medium" name="متوسط" stroke="oklch(var(--chart-4))" fill="oklch(var(--chart-4))" stackId="alerts" strokeWidth={2} isAnimationActive />
+                <Area type="monotone" dataKey="low" name="پایین" stroke="oklch(var(--chart-5))" fill="oklch(var(--chart-5))" stackId="alerts" strokeWidth={2} isAnimationActive />
+              </AreaChart>
             </ChartContainer>
           </CardContent>
         </Card>
 
-        {/* Alert severity (pie) */}
+        {/* Lowest tanks ranking */}
+        <Card>
+          <CardHeader>
+            <CardTitle>کم‌سطح‌ترین مخازن</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {lowLevelTanks.length === 0 ? (
+                <div className="text-xs text-muted-foreground">مخزنی یافت نشد</div>
+              ) : (
+                lowLevelTanks.map((t) => (
+                  <div key={t.id} className="space-y-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="font-medium truncate">{t.name}</div>
+                      <div className="text-xs text-muted-foreground">{Math.round(t.level)}%</div>
+                    </div>
+                    <Progress value={Math.max(0, Math.min(100, t.level))} className="h-2" />
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <div>{t.liters.toLocaleString("fa-IR")} لیتر</div>
+                      <div>ظرفیت: {t.capacity.toLocaleString("fa-IR")} لیتر</div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tank distribution (bar) */}
+        <Card>
+          <CardHeader>
+            <CardTitle>توزیع مخازن (ستونی)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={chartConfig} className="h-[260px]">
+              <BarChart data={tankDistribution} layout="horizontal">
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis type="number" />
+                <YAxis dataKey="name" type="category" width={100} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]} isAnimationActive>
+                  {tankDistribution.map((entry, idx) => (
+                    <Cell key={`tank-${idx}`} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        {/* Alert severity (bar) */}
         {alertSeverity.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>توزیع شدت هشدارها</CardTitle>
+              <CardTitle>شدت هشدارها (ستونی)</CardTitle>
             </CardHeader>
             <CardContent>
               <ChartContainer config={chartConfig} className="h-[260px]">
-                <PieChart>
-                  <Pie data={alertSeverity} cx="50%" cy="50%" outerRadius={100} dataKey="value">
+                <BarChart data={alertSeverity} layout="horizontal">
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" />
+                  <YAxis dataKey="name" type="category" width={100} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="value" radius={[4, 4, 0, 0]} isAnimationActive>
                     {alertSeverity.map((entry, idx) => (
                       <Cell key={`alert-${entry.name}-${idx}`} fill={entry.fill} />
                     ))}
-                  </Pie>
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <ChartLegend content={<ChartLegendContent />} />
-                </PieChart>
+                  </Bar>
+                </BarChart>
               </ChartContainer>
             </CardContent>
           </Card>

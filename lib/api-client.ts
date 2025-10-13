@@ -279,6 +279,10 @@ class ApiClient {
     return this.put<{ task: Task }>(`/api/tasks/${id}`, updates)
   }
 
+  async deleteTask(id: string) {
+    return this.delete<{ message: string }>(`/api/tasks/${id}`)
+  }
+
   // Weekly tasks operations
   async getWeeklyTasks() {
     return this.get<{ tasks: WeeklyTask[] }>("/api/weekly-tasks")

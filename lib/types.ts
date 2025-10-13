@@ -2,7 +2,7 @@
 export interface User {
   id: string
   name: string
-  role: "root" | "manager" | "operator" | "supervisor"
+  role: "root" | "manager" | "operator" | "supervisor" | "monitor"
   email: string
   permissions: string[]
   createdAt: Date | string
@@ -12,7 +12,7 @@ export interface User {
 export interface PrismaUser {
   id: string
   name: string
-  role: "root" | "manager" | "operator" | "supervisor"
+  role: "root" | "manager" | "operator" | "supervisor" | "monitor"
   email: string
   permissions: string[]
   createdAt: Date | string

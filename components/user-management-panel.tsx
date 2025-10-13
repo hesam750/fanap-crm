@@ -38,6 +38,7 @@ const ROLE_PERMISSIONS = {
   manager: ["view-dashboard", "view-analytics", "view-reports", "manage-tasks", "assign-tasks", "acknowledge-alerts"],
   supervisor: ["view-dashboard", "view-analytics", "acknowledge-alerts"],
   operator: ["view-dashboard", "update-tank-levels", "update-generator-levels"],
+  monitor: ["view-dashboard", "view-analytics", "view-reports"],
 }
 
 export function UserManagementPanel() {
@@ -250,6 +251,8 @@ export function UserManagementPanel() {
         return "اپراتور"
       case "supervisor":
         return "ناظر"
+      case "monitor":
+        return "نمایشگر"
       default:
         return "نامشخص"
     }
