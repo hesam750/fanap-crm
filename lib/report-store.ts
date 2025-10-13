@@ -2,7 +2,7 @@
 
 import { randomUUID } from "crypto"
 
-type ReportContent = Uint8Array | Buffer
+type ReportContent = string | Uint8Array | Buffer
 
 export interface StoredReport {
   id: string
@@ -17,7 +17,12 @@ const store = new Map<string, StoredReport>()
 
 export function saveReport(input: { content: ReportContent; contentType: string; filename: string }): string {
   const id = typeof randomUUID === "function" ? randomUUID() : Math.random().toString(36).slice(2)
-  const content = input.content instanceof Uint8Array ? input.content : new Uint8Array(input.content)
+  const content =
+    typeof input.content === "string"
+      ? new TextEncoder().encode(input.content)
+      : input.content instanceof Uint8Array
+        ? input.content
+        : new Uint8Array(input.content)
   const record: StoredReport = {
     id,
     content,

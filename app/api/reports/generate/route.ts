@@ -6,6 +6,8 @@ import { validateAuth } from "@/lib/auth-middleware"
 import type { PrismaTank, PrismaGenerator } from "@/lib/types"
 import { saveReport } from "@/lib/report-store"
 
+export const runtime = "nodejs"
+
 
 export async function POST(request: NextRequest) {
   const user = await validateAuth(request)

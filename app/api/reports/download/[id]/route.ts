@@ -1,6 +1,8 @@
-import { NextRequest, NextResponse } from "next/server"
+ import { NextRequest, NextResponse } from "next/server"
 import { validateAuth } from "@/lib/auth-middleware"
 import { getReport } from "@/lib/report-store"
+
+export const runtime = "nodejs"
 
 export async function GET(
   request: NextRequest,
@@ -28,7 +30,9 @@ export async function GET(
     headers.set("Cache-Control", "no-store")
     headers.set("Content-Length", String(report.content.byteLength))
 
-    return new NextResponse(report.content, { status: 200, headers })
+    // Ensure BodyInit compatibility: use Node Buffer (Uint8Array with ArrayBuffer)
+    const body = Buffer.from(report.content)
+    return new NextResponse(body, { status: 200, headers })
   } catch (error) {
     console.error("Download report error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
