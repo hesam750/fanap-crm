@@ -39,6 +39,8 @@ export default function Home() {
     const currentUser = auth.getCurrentUser()
     if (currentUser) {
       setUser(currentUser)
+      auth.loadSystemSettings()
+      setActiveTab(getDefaultTabForUser(auth))
       loadData()
     } else {
       setLoading(false)
@@ -374,7 +376,9 @@ export default function Home() {
 
   function handleLogin(loggedInUser: User) {
     setUser(loggedInUser)
-    setActiveTab("dashboard")
+    const auth = AuthService.getInstance()
+    auth.loadSystemSettings()
+    setActiveTab(getDefaultTabForUser(auth))
     // پس از ورود، داده‌ها را بارگذاری می‌کنیم
     loadData()
   }
@@ -465,6 +469,14 @@ export default function Home() {
   const unacknowledgedAlerts = alerts.filter((alert) => !alert.acknowledged)
   const unreadNotifications = notifications.filter((n) => !n.read)
 
+  function getDefaultTabForUser(auth: AuthService) {
+    const order = ["dashboard", "analytics", "reports", "planning", "alerts", "admin"]
+    for (const t of order) {
+      if (auth.canAccessTab(t)) return t
+    }
+    return "alerts"
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-300 dark:from-gray-800 dark:to-gray-900">
       <DashboardHeader
@@ -476,7 +488,7 @@ export default function Home() {
       />
 
       <main className="container mx-auto px-6 py-6 space-y-6">
-        {auth.canViewDashboard() && (
+              {auth.canAccessTab("dashboard") && (
           <AnimatePresence mode="wait">
             <motion.div
               key="overview"
@@ -498,20 +510,22 @@ export default function Home() {
                    <SelectValue placeholder="انتخاب بخش" />
                  </SelectTrigger>
                 <SelectContent className="text-right w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-2rem)] max-h-[60vh] overflow-auto">
-                   {auth.canViewDashboard() && (
+                   {auth.canAccessTab("dashboard") && (
                      <SelectItem value="dashboard">داشبورد</SelectItem>
                    )}
-                   {auth.canViewAnalytics() && (
+                   {auth.canAccessTab("analytics") && (
                      <SelectItem value="analytics">تحلیل‌ها</SelectItem>
                    )}
-                   {auth.canViewReports() && (
+                   {auth.canAccessTab("reports") && (
                      <SelectItem value="reports">گزارش‌ها</SelectItem>
                    )}
-                   {(auth.canManageTasks() || auth.hasPermission("view_assigned_tasks")) && (
+                   {auth.canAccessTab("planning") && (
                      <SelectItem value="planning">برنامه‌ریزی هفتگی</SelectItem>
                    )}
-                   <SelectItem value="alerts">هشدارها</SelectItem>
-                   {auth.isSuperAdmin() && (
+                   {auth.canAccessTab("alerts") && (
+                     <SelectItem value="alerts">هشدارها</SelectItem>
+                   )}
+                   {auth.canAccessTab("admin") && (
                      <SelectItem value="admin">مدیریت</SelectItem>
                    )}
                  </SelectContent>
@@ -522,7 +536,7 @@ export default function Home() {
               <TabsList
                 className="hidden md:flex w-full h-auto p-1 bg-transparent overflow-x-auto"
               >
-                {auth.canViewDashboard() && (
+                {auth.canAccessTab("dashboard") && (
                   <TabsTrigger
                     value="dashboard"
                     className="data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200"
@@ -533,7 +547,7 @@ export default function Home() {
                     </Badge>
                   </TabsTrigger>
                 )}
-                {auth.canViewAnalytics() && (
+                {auth.canAccessTab("analytics") && (
                   <TabsTrigger
                     value="analytics"
                     className="data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200"
@@ -541,7 +555,7 @@ export default function Home() {
                     تحلیل‌ها
                   </TabsTrigger>
                 )}
-                {auth.canViewReports() && (
+                {auth.canAccessTab("reports") && (
                   <TabsTrigger
                     value="reports"
                     className="data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200"
@@ -549,7 +563,7 @@ export default function Home() {
                     گزارش‌ها
                   </TabsTrigger>
                 )}
-                {(auth.canManageTasks() || auth.hasPermission("view_assigned_tasks")) && (
+                {auth.canAccessTab("planning") && (
                   <TabsTrigger
                     value="planning"
                     className="data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200"
@@ -557,17 +571,19 @@ export default function Home() {
                     برنامه‌ریزی هفتگی
                   </TabsTrigger>
                 )}
-                <TabsTrigger
-                  value="alerts"
-                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200"
-                >
-                  هشدارها
-                  {unacknowledgedAlerts.length > 0 && (
-                    <Badge variant="destructive" className="mr-2 text-xs">
-                      {unacknowledgedAlerts.length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
+                {auth.canAccessTab("alerts") && (
+                  <TabsTrigger
+                    value="alerts"
+                    className="data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200"
+                  >
+                    هشدارها
+                    {unacknowledgedAlerts.length > 0 && (
+                      <Badge variant="destructive" className="mr-2 text-xs">
+                        {unacknowledgedAlerts.length}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                )}
                 {/* <TabsTrigger
                   value="notifications"
                   className="data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200"
@@ -579,7 +595,7 @@ export default function Home() {
                     </Badge>
                   )}
                 </TabsTrigger> */}
-                {auth.isSuperAdmin() && (
+                {auth.canAccessTab("admin") && (
                   <TabsTrigger
                     value="admin"
                     className="data-[state=active]:bg-background data-[state=active]:shadow-sm transition-all duration-200"
@@ -592,7 +608,7 @@ export default function Home() {
 
             <div className="p-6">
               <AnimatePresence mode="wait">
-                {auth.canViewDashboard() && (
+              {auth.canAccessTab("dashboard") && (
                   <TabsContent key="tab-dashboard" value="dashboard" className="space-y-6 mt-0">
                     <motion.div
                       initial={{ opacity: 0, x: 20 }}
@@ -689,7 +705,7 @@ export default function Home() {
                   </TabsContent>
                 )}
 
-                {auth.canViewAnalytics() && (
+                {auth.canAccessTab("analytics") && (
                   <TabsContent key="tab-analytics" value="analytics" className="space-y-6 mt-0">
                     <motion.div
                       initial={{ opacity: 0, x: 20 }}
@@ -703,7 +719,7 @@ export default function Home() {
                   </TabsContent>
                 )}
 
-                {auth.canViewReports() && (
+                {auth.canAccessTab("reports") && (
                   <TabsContent key="tab-reports" value="reports" className="space-y-6 mt-0">
                     <motion.div
                       initial={{ opacity: 0, x: 20 }}
@@ -716,7 +732,7 @@ export default function Home() {
                   </TabsContent>
                 )}
 
-                {(auth.canManageTasks() || auth.hasPermission("view_assigned_tasks")) && (
+                {auth.canAccessTab("planning") && (
                   <TabsContent key="tab-planning" value="planning" className="space-y-6 mt-0">
                     <motion.div
                       initial={{ opacity: 0, x: 20 }}
@@ -737,7 +753,8 @@ export default function Home() {
                     </motion.div>
                   </TabsContent>
                 )}
-                <TabsContent key="tab-alerts" value="alerts" className="space-y-6 mt-0">
+                {auth.canAccessTab("alerts") && (
+                  <TabsContent key="tab-alerts" value="alerts" className="space-y-6 mt-0">
                   <motion.div
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -793,9 +810,10 @@ export default function Home() {
                       </div>
                     </div>
                   </motion.div>
-                </TabsContent>
+                  </TabsContent>
+                )}
 
-                {auth.isSuperAdmin() && (
+                {auth.canAccessTab("admin") && (
                   <TabsContent key="tab-admin" value="admin" className="space-y-6 mt-0">
                     <motion.div
                       initial={{ opacity: 0, x: 20 }}

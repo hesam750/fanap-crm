@@ -210,6 +210,8 @@ export interface SystemSettings {
   autoUpdateInterval?: number
   maintenanceMode?: boolean
   dataRetentionDays?: number
+  // RBAC: tab access mapping per role
+  tabAccessByRole?: Record<Role, string[]>
 }
 
 
@@ -275,3 +277,6 @@ export interface ActivityLog {
   metadata?: Record<string, any> | null
   createdAt: Date
 }
+
+// Convenience role type for RBAC mapping
+export type Role = User["role"]

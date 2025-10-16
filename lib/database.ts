@@ -14,6 +14,43 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 export class DatabaseService {
   private static instance: DatabaseService
   private notifications: Notification[] = []
+  // In-memory system settings (fallback until DB storage is wired)
+  private systemSettings: any = {
+    lowAlertThreshold: 20,
+    criticalAlertThreshold: 10,
+    autoUpdateInterval: 5,
+    maintenanceMode: false,
+    dataRetentionDays: 30,
+    tabAccessByRole: {
+      root: ["*"],
+      manager: [
+        "dashboard",
+        "analytics",
+        "reports",
+        "planning",
+        "alerts",
+        "admin:tasks",
+      ],
+      supervisor: [
+        "dashboard",
+        "analytics",
+        "reports",
+        "planning",
+        "alerts",
+      ],
+      operator: [
+        "dashboard",
+        "planning",
+        "alerts",
+      ],
+      monitor: [
+        "dashboard",
+        "reports",
+        "analytics",
+        "alerts",
+      ],
+    },
+  }
 
   static getInstance(): DatabaseService
   {
@@ -273,13 +310,8 @@ export class DatabaseService {
 
   async getSystemSettings(): Promise<any> {
     try {
-      return {
-        lowAlertThreshold: 20,
-        criticalAlertThreshold: 10,
-        autoUpdateInterval: 5,
-        maintenanceMode: false,
-        dataRetentionDays: 30,
-      }
+      // Return current in-memory settings
+      return this.systemSettings
     } catch (error) {
       console.error('[Database] Failed to get system settings:', error)
       throw error
@@ -288,7 +320,17 @@ export class DatabaseService {
 
   async updateSystemSettings(settings: any): Promise<void> {
     try {
-      console.log('Saving system settings:', settings)
+      // Merge incoming settings; shallow merge is sufficient for our structure
+      const next = { ...this.systemSettings, ...settings }
+      // Merge nested tabAccessByRole if provided
+      if (settings?.tabAccessByRole) {
+        next.tabAccessByRole = {
+          ...this.systemSettings.tabAccessByRole,
+          ...settings.tabAccessByRole,
+        }
+      }
+      this.systemSettings = next
+      console.log('Saving system settings:', this.systemSettings)
     } catch (error) {
       console.error('[Database] Failed to update system settings:', error)
       throw error

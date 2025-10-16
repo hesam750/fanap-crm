@@ -4,6 +4,7 @@ import { User } from "./types"
 export class AuthService {
   private static instance: AuthService
   private currentUser: User | null = null
+  private tabAccessByRole: Record<string, string[]> | undefined
 
   static getInstance(): AuthService {
     if (!AuthService.instance) {
@@ -68,6 +69,65 @@ export class AuthService {
       }
     }
     return this.currentUser
+  }
+
+  // Load and cache system settings tab access mapping
+  async loadSystemSettings(): Promise<void> {
+    try {
+      const response = await fetch('/api/system/settings', {
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      })
+      if (!response.ok) return
+      const data = await response.json()
+      const mapping = data?.settings?.tabAccessByRole
+      if (mapping && typeof mapping === 'object') {
+        this.tabAccessByRole = mapping
+        try {
+          localStorage.setItem('tabAccessByRole', JSON.stringify(mapping))
+        } catch {}
+      }
+    } catch (e) {
+      // Swallow network errors; fallback will be used
+    }
+  }
+
+  private getTabAccessByRole(): Record<string, string[]> {
+    if (this.tabAccessByRole) return this.tabAccessByRole
+    try {
+      const raw = localStorage.getItem('tabAccessByRole')
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (parsed && typeof parsed === 'object') {
+          this.tabAccessByRole = parsed
+          return this.tabAccessByRole
+        }
+      }
+    } catch {}
+    // Default mapping if nothing is loaded yet
+    this.tabAccessByRole = {
+      root: ['*'],
+      manager: ['dashboard','analytics','reports','planning','alerts','admin:tasks'],
+      supervisor: ['dashboard','analytics','reports','planning','alerts'],
+      operator: ['dashboard','planning','alerts'],
+      monitor: ['dashboard','reports','analytics','alerts'],
+    }
+    return this.tabAccessByRole
+  }
+
+  // Tab-based RBAC check
+  canAccessTab(tabId: string): boolean {
+    const user = this.getCurrentUser()
+    if (!user || !user.isActive) return false
+    if (user.role === 'root') return true
+    const mapping = this.getTabAccessByRole()
+    const tabs = mapping[user.role] || []
+    if (tabs.includes('*')) return true
+    // Admin section visibility: if any admin:* is allowed, treat top-level 'admin' as accessible
+    if (tabId === 'admin') {
+      return tabs.some(t => t.startsWith('admin:'))
+    }
+    return tabs.includes(tabId)
   }
 
   // Normalize permission ids across hyphen/underscore and known aliases
