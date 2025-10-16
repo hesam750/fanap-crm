@@ -11,11 +11,12 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Alert, Generator, Tank, Task } from "@/lib/types"
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, RadialBar, RadialBarChart, ResponsiveContainer, XAxis, YAxis } from "recharts"
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, XAxis, YAxis, LabelList } from "recharts"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ManagementKPIs } from "@/components/management-kpis"
 import { useState, useEffect } from "react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { AnalyticsCharts } from "@/components/analytics-charts"
 
 type Props = {
   tanks: Tank[]
@@ -40,20 +41,19 @@ const Analytics = ({ tanks, alerts, generators, tasks }: Props) => {
     }
   })
 
-  // Prepare generator data
+  // Prepare generator data (use real current level only)
   const generatorData = generators.map((gen) => ({
     name: gen.name.replace("ژنراتور ", ""),
-    currentLevel: gen.currentLevel,
+    currentLevel: Math.max(0, Math.min(100, gen.currentLevel)),
     capacity: gen.capacity,
     status: gen.status,
     utilization: Math.max(0, Math.min(100, gen.currentLevel)),
-    efficiency: gen.status === "running" ? 85 + Math.random() * 15 : 0,
     fill:
       gen.status === "running"
-        ? "var(--chart-1)"
+        ? "var(--chart-3)"
         : gen.status === "stopped"
           ? "var(--chart-2)"
-          : "var(--chart-3)",
+          : "var(--chart-5)",
   }))
 
   // Generator status distribution
@@ -152,6 +152,19 @@ const Analytics = ({ tanks, alerts, generators, tasks }: Props) => {
             ? "var(--chart-4)"
             : "var(--chart-5)",
   }))
+
+  // Stacked horizontal (floating) bar data: priority × status distribution
+  const prioritiesOrder: Array<"critical" | "high" | "medium" | "low"> = ["critical", "high", "medium", "low"]
+  const taskPriorityStackData = prioritiesOrder.map((p) => {
+    const list = tasks.filter((t) => t.priority === p)
+    const base = { priority: priorityFa(p), completed: 0, in_progress: 0, pending: 0, cancelled: 0, total: 0 }
+    for (const t of list) {
+      
+      base[t.status] = (base[t.status] || 0) + 1
+    }
+    base.total = list.length
+    return base
+  })
 
   // Tank type distribution
   const tankTypes = tanks.reduce(
@@ -259,105 +272,63 @@ const Analytics = ({ tanks, alerts, generators, tasks }: Props) => {
         </Card>
       </div>
 
-      {/* Enhanced Charts Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-w-0">
-   <Card>
-  <CardHeader>
-    <CardTitle>بررسی سطح مخازن</CardTitle>
-    <CardDescription>مقایسه سطح فعلی با ظرفیت و نمایش روند تغییرات</CardDescription>
-  </CardHeader>
-  <CardContent>
-    <ChartContainer
-      config={{
-        currentLevel: {
-          label: "سطح فعلی",
-          color: "var(--chart-1)",
-        },
-        capacity: {
-          label: "ظرفیت",
-          color: "var(--chart-2)",
-        },
-        utilization: {
-          label: "درصد استفاده",
-          color: "var(--chart-3)",
-        },
-      }}
-      className="h-[350px]"
-    >
-      <AreaChart data={tankLevelData}>
-        <CartesianGrid strokeDasharray="3 3" className="stroke-muted " />
-        <XAxis dataKey="name" className="text-xs" tick={{ fontSize: 12 }} />
-        <YAxis className="text-xs" tick={{ fontSize: 12 }} />
-        <ChartTooltip
-          content={
-            <ChartTooltipContent
-              formatter={(value, name) => [
-                `${value}${name === "utilization" ? "%" : "L"}`,
-                name === "currentLevel" ? "سطح فعلی" : name === "capacity" ? "ظرفیت" : "درصد استفاده",
-              ]}
-            />
-          }
-        />
-        <ChartLegend content={<ChartLegendContent />} />
-        <Area
-          type="monotone"
-          dataKey="capacity"
-          stackId="1"
-          stroke="var(--color-capacity)"
-          fill="var(--color-capacity)"
-          fillOpacity={0.2}
-        />
-        <Area
-          type="monotone"
-          dataKey="currentLevel"
-          stackId="2"
-          stroke="var(--color-currentLevel)"
-          fill="var(--color-currentLevel)"
-          fillOpacity={0.8}
-        />
-      </AreaChart>
-    </ChartContainer>
-  </CardContent>
-</Card>
+      {/* Advanced Trends & Insights */}
+      <div className="space-y-6">
+        <AnalyticsCharts tanks={tanks} generators={generators} alerts={alerts} />
+      </div>
 
 
-<Card>
-  <CardHeader>
-    <CardTitle>نشانگر استفاده از مخزن</CardTitle>
-    <CardDescription>نمای دایره‌ای از استفاده ظرفیت مخزن</CardDescription>
-  </CardHeader>
-  <CardContent>
-    <ChartContainer
-      config={{
-        utilization: {
-          label: "درصد استفاده",
-          color: "var(--chart-1)",
-        },
-      }}
-      className="h-[350px]"
-    >
-      <RadialBarChart cx="50%" cy="50%" innerRadius="20%" outerRadius="80%" data={tankRadialData}>
-        <RadialBar
-          dataKey="utilization"
-          cornerRadius={10}
-          background
-          isAnimationActive={false}
-        />
-        <ChartTooltip content={<ChartTooltipContent formatter={(value) => [`${value}%`, "درصد استفاده"]} />} />
-        <Legend
-          iconSize={8}
-          layout="vertical"
-          verticalAlign="middle"
-          align="right"
-          wrapperStyle={{ fontSize: "12px" }}
-        />
-      </RadialBarChart>
-    </ChartContainer>
-  </CardContent>
-</Card>
+      {/* Task Distribution by Priority (Floating Bar) */}
+      <Card>
+        <CardHeader>
+          <CardTitle>توزیع تسک‌ها و سطح اولویت (میله‌ای شناور)</CardTitle>
+          <CardDescription>هر ردیف یک اولویت؛ بخش‌های رنگی نمایش وضعیت‌ها؛ برچسب کنار، مجموع تسک‌های آن اولویت</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {tasks.length === 0 ? (
+            <div className="text-xs text-muted-foreground">داده‌ای برای وظایف موجود نیست</div>
+          ) : (
+            <ChartContainer
+              config={{
+                pending: { label: "در انتظار", color: "var(--chart-2)" },
+                in_progress: { label: "در حال انجام", color: "var(--chart-4)" },
+                completed: { label: "تکمیل شده", color: "var(--chart-1)" },
+                cancelled: { label: "لغو شده", color: "var(--destructive)" },
+              }}
+              className="h-[380px]"
+            >
+              <BarChart
+                data={taskPriorityStackData}
+                layout="vertical"
+                margin={{ top: 16, right: 24, left: 24, bottom: 16 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis type="number" tick={{ fontSize: 12 }} />
+                <YAxis type="category" dataKey="priority" tick={{ fontSize: 12 }} width={90} />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                {isMd && <ChartLegend content={<ChartLegendContent />} />}
+
+                {/* Stacked segments: completed → in_progress → pending → cancelled */}
+                <Bar dataKey="completed" stackId="a" fill="var(--color-completed)" radius={[6, 0, 0, 6]}>
+                  <LabelList dataKey="completed" position="insideRight" formatter={(v: number) => (v ? String(v) : "")} />
+                </Bar>
+                <Bar dataKey="in_progress" stackId="a" fill="var(--color-in_progress)">
+                  <LabelList dataKey="in_progress" position="insideRight" formatter={(v: number) => (v ? String(v) : "")} />
+                </Bar>
+                <Bar dataKey="pending" stackId="a" fill="var(--color-pending)">
+                  <LabelList dataKey="pending" position="insideRight" formatter={(v: number) => (v ? String(v) : "")} />
+                </Bar>
+                <Bar dataKey="cancelled" stackId="a" fill="var(--color-cancelled)">
+                  <LabelList dataKey="cancelled" position="insideRight" formatter={(v: number) => (v ? String(v) : "")} />
+                </Bar>
+              </BarChart>
+            </ChartContainer>
+          )}
+        </CardContent>
+      </Card>
 
 
-<Card>
+{/* <Card>
   <CardHeader>
     <CardTitle>وضعیت ژنراتور</CardTitle>
     <CardDescription>توزیع وضعیت‌های ژنراتور</CardDescription>
@@ -399,21 +370,17 @@ const Analytics = ({ tanks, alerts, generators, tasks }: Props) => {
       </PieChart>
     </ChartContainer>
   </CardContent>
-</Card>
+</Card> */}
 
 
 <Card>
   <CardHeader>
     <CardTitle>عملکرد ژنراتور</CardTitle>
-    <CardDescription>توزیع وضعیت و معیارهای بهره‌وری</CardDescription>
+    <CardDescription>سطح فعلی ژنراتورها (درصد)</CardDescription>
   </CardHeader>
   <CardContent>
     <ChartContainer
       config={{
-        efficiency: {
-          label: "بهره‌وری %",
-          color: "var(--chart-1)",
-        },
         utilization: {
           label: "درصد استفاده",
           color: "var(--chart-2)",
@@ -425,22 +392,15 @@ const Analytics = ({ tanks, alerts, generators, tasks }: Props) => {
         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
         <XAxis dataKey="name" className="text-xs" tick={{ fontSize: 12 }} />
         <YAxis className="text-xs" tick={{ fontSize: 12 }} />
-        <ChartTooltip
-          content={
-            <ChartTooltipContent
-              formatter={(value, name) => [`${value}%`, name === "efficiency" ? "بهره‌وری" : "درصد استفاده"]}
-            />
-          }
-        />
+        <ChartTooltip content={<ChartTooltipContent />} />
         {isMd && <ChartLegend content={<ChartLegendContent />} />}
-        <Bar dataKey="efficiency" fill="var(--color-efficiency)" radius={[4, 4, 0, 0]} />
         <Bar dataKey="utilization" fill="var(--color-utilization)" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ChartContainer>
   </CardContent>
 </Card>
 
- <Card>
+ {/* <Card>
   <CardHeader>
     <CardTitle>توزیع هشدارها</CardTitle>
     <CardDescription>سطوح شدت و وضعیت پاسخ</CardDescription>
@@ -473,9 +433,9 @@ const Analytics = ({ tanks, alerts, generators, tasks }: Props) => {
       </PieChart>
     </ChartContainer>
   </CardContent>
-</Card>
+</Card> */}
 
-<Card>
+{/* <Card>
   <CardHeader>
     <CardTitle>وضعیت وظایف</CardTitle>
     <CardDescription>توزیع وضعیت‌های وظایف (در انتظار، در حال انجام، تکمیل شده، لغو شده)</CardDescription>
@@ -508,9 +468,9 @@ const Analytics = ({ tanks, alerts, generators, tasks }: Props) => {
       </PieChart>
     </ChartContainer>
   </CardContent>
-</Card>
+</Card> */}
 
-<Card>
+{/* <Card>
   <CardHeader>
     <CardTitle>اولویت وظایف</CardTitle>
     <CardDescription>توزیع اولویت‌ها (پایین، متوسط، بالا، بحرانی)</CardDescription>
@@ -543,9 +503,8 @@ const Analytics = ({ tanks, alerts, generators, tasks }: Props) => {
       </PieChart>
     </ChartContainer>
   </CardContent>
-</Card>
-
-      </div>
+</Card> */}
+ 
     </TabsContent>
     <TabsContent value="kpis" className="space-y-6">
       <ManagementKPIs />

@@ -22,6 +22,7 @@ import {
   CartesianGrid,
   Brush,
   ReferenceLine,
+  LabelList,
 } from "recharts"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Progress } from "@/components/ui/progress"
@@ -59,18 +60,26 @@ export function AnalyticsCharts({ tanks, generators, alerts }: AnalyticsChartsPr
 
   const tankDistribution = useMemo(
     () => [
-      { name: "مخازن سوخت", value: tanks.filter((t) => t.type === "fuel").length, fill: "oklch(var(--chart-1))" },
-      { name: "مخازن آب", value: tanks.filter((t) => t.type === "water").length, fill: "oklch(var(--chart-2))" },
+      { name: "مخازن سوخت", value: tanks.filter((t) => t.type === "fuel").length, fill: "var(--chart-1)" },
+      { name: "مخازن آب", value: tanks.filter((t) => t.type === "water").length, fill: "var(--chart-2)" },
     ],
     [tanks]
   )
 
+  // Combined floating composition for tank types (single stacked horizontal bar)
+  const tankComposition = useMemo(() => {
+    const fuel = tanks.filter((t) => t.type === "fuel").length
+    const water = tanks.filter((t) => t.type === "water").length
+    const total = fuel + water
+    return [{ label: "کل مخازن", fuel, water, total }]
+  }, [tanks])
+
   const generatorStatusData = useMemo(
     () =>
       [
-        { status: "در حال کار", count: generators.filter((g) => g.status === "running").length, fill: "oklch(var(--chart-4))" },
-        { status: "متوقف", count: generators.filter((g) => g.status === "stopped").length, fill: "oklch(var(--chart-2))" },
-        { status: "تعمیر", count: generators.filter((g) => g.status === "maintenance").length, fill: "oklch(var(--destructive))" },
+        { status: "در حال کار", count: generators.filter((g) => g.status === "running").length, fill: "var(--chart-4)" },
+        { status: "متوقف", count: generators.filter((g) => g.status === "stopped").length, fill: "var(--chart-2)" },
+        { status: "تعمیر", count: generators.filter((g) => g.status === "maintenance").length, fill: "var(--destructive)" },
       ].filter((i) => i.count > 0),
     [generators]
   )
@@ -78,22 +87,22 @@ export function AnalyticsCharts({ tanks, generators, alerts }: AnalyticsChartsPr
   const alertSeverity = useMemo(
     () =>
       [
-        { name: "بحرانی", value: alerts.filter((a) => a.severity === "critical").length, fill: "oklch(var(--destructive))" },
-        { name: "بالا", value: alerts.filter((a) => a.severity === "high").length, fill: "oklch(var(--chart-3))" },
-        { name: "متوسط", value: alerts.filter((a) => a.severity === "medium").length, fill: "oklch(var(--chart-4))" },
-        { name: "پایین", value: alerts.filter((a) => a.severity === "low").length, fill: "oklch(var(--chart-5))" },
+        { name: "بحرانی", value: alerts.filter((a) => a.severity === "critical").length, fill: "var(--destructive)" },
+        { name: "بالا", value: alerts.filter((a) => a.severity === "high").length, fill: "var(--chart-3)" },
+        { name: "متوسط", value: alerts.filter((a) => a.severity === "medium").length, fill: "var(--chart-4)" },
+        { name: "پایین", value: alerts.filter((a) => a.severity === "low").length, fill: "var(--chart-5)" },
       ].filter((i) => i.value > 0),
     [alerts]
   )
 
   const chartConfig = {
-    fuelAverage: { label: "میانگین سوخت", color: "oklch(var(--chart-1))" },
-    waterAverage: { label: "میانگین آب", color: "oklch(var(--chart-2))" },
+    fuelAverage: { label: "میانگین سوخت", color: "var(--chart-1)" },
+    waterAverage: { label: "میانگین آب", color: "var(--chart-2)" },
     count: { label: "تعداد" },
-    critical: { label: "بحرانی", color: "oklch(var(--destructive))" },
-    high: { label: "بالا", color: "oklch(var(--chart-3))" },
-    medium: { label: "متوسط", color: "oklch(var(--chart-4))" },
-    low: { label: "پایین", color: "oklch(var(--chart-5))" },
+    critical: { label: "بحرانی", color: "var(--destructive)" },
+    high: { label: "بالا", color: "var(--chart-3)" },
+    medium: { label: "متوسط", color: "var(--chart-4)" },
+    low: { label: "پایین", color: "var(--chart-5)" },
   } as const
 
   const buildDateBuckets = useCallback((days: number) => {
@@ -253,12 +262,12 @@ export function AnalyticsCharts({ tanks, generators, alerts }: AnalyticsChartsPr
                 <AreaChart data={historicalData} margin={{ left: 12, right: 12 }}>
                   <defs>
                     <linearGradient id="colorFuel" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="oklch(var(--chart-1))" stopOpacity={0.35} />
-                      <stop offset="95%" stopColor="oklch(var(--chart-1))" stopOpacity={0.02} />
+                      <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0.02} />
                     </linearGradient>
                     <linearGradient id="colorWater" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="oklch(var(--chart-2))" stopOpacity={0.35} />
-                      <stop offset="95%" stopColor="oklch(var(--chart-2))" stopOpacity={0.02} />
+                      <stop offset="5%" stopColor="var(--chart-2)" stopOpacity={0.35} />
+                      <stop offset="95%" stopColor="var(--chart-2)" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -266,10 +275,10 @@ export function AnalyticsCharts({ tanks, generators, alerts }: AnalyticsChartsPr
                   <YAxis domain={[0, 100]} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <ChartLegend content={<ChartLegendContent />} />
-                  <ReferenceLine y={30} stroke="oklch(var(--destructive))" strokeDasharray="4 4" label={{ value: "آستانه کم", position: "left" }} />
-                  <ReferenceLine y={80} stroke="oklch(var(--chart-4))" strokeDasharray="4 4" label={{ value: "آستانه بالا", position: "left" }} />
-                  <Area type="monotone" dataKey="fuelAverage" name="میانگین سوخت (%)" stroke="oklch(var(--chart-1))" fill="url(#colorFuel)" strokeWidth={2} activeDot={{ r: 3 }} isAnimationActive />
-                  <Area type="monotone" dataKey="waterAverage" name="میانگین آب (%)" stroke="oklch(var(--chart-2))" fill="url(#colorWater)" strokeWidth={2} activeDot={{ r: 3 }} isAnimationActive />
+                  <ReferenceLine y={30} stroke="var(--destructive)" strokeDasharray="4 4" label={{ value: "آستانه کم", position: "left" }} />
+                  <ReferenceLine y={80} stroke="var(--chart-4)" strokeDasharray="4 4" label={{ value: "آستانه بالا", position: "left" }} />
+                  <Area type="monotone" dataKey="fuelAverage" name="میانگین سوخت (%)" stroke="var(--chart-1)" fill="url(#colorFuel)" strokeWidth={2} activeDot={{ r: 3 }} isAnimationActive />
+                  <Area type="monotone" dataKey="waterAverage" name="میانگین آب (%)" stroke="var(--chart-2)" fill="url(#colorWater)" strokeWidth={2} activeDot={{ r: 3 }} isAnimationActive />
                   <Brush dataKey="date" height={20} travellerWidth={8} className="fill-muted" />
                 </AreaChart>
               </ChartContainer>
@@ -310,7 +319,7 @@ export function AnalyticsCharts({ tanks, generators, alerts }: AnalyticsChartsPr
         </Card>
 
         {/* Generator status (horizontal bar) */}
-        <Card>
+        {/* <Card>
           <CardHeader>
             <CardTitle>وضعیت ژنراتورها</CardTitle>
           </CardHeader>
@@ -325,7 +334,7 @@ export function AnalyticsCharts({ tanks, generators, alerts }: AnalyticsChartsPr
               </BarChart>
             </ChartContainer>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Alerts trend over time (stacked area) */}
         <Card className="lg:col-span-2">
@@ -333,19 +342,25 @@ export function AnalyticsCharts({ tanks, generators, alerts }: AnalyticsChartsPr
             <CardTitle>روند هشدارها در زمان ({timeRange} روز گذشته)</CardTitle>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-[280px]">
-              <AreaChart data={alertTrendData} margin={{ left: 12, right: 12 }}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis allowDecimals={false} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <ChartLegend content={<ChartLegendContent />} />
-                <Area type="monotone" dataKey="critical" name="بحرانی" stroke="oklch(var(--destructive))" fill="oklch(var(--destructive))" stackId="alerts" strokeWidth={2} isAnimationActive />
-                <Area type="monotone" dataKey="high" name="بالا" stroke="oklch(var(--chart-3))" fill="oklch(var(--chart-3))" stackId="alerts" strokeWidth={2} isAnimationActive />
-                <Area type="monotone" dataKey="medium" name="متوسط" stroke="oklch(var(--chart-4))" fill="oklch(var(--chart-4))" stackId="alerts" strokeWidth={2} isAnimationActive />
-                <Area type="monotone" dataKey="low" name="پایین" stroke="oklch(var(--chart-5))" fill="oklch(var(--chart-5))" stackId="alerts" strokeWidth={2} isAnimationActive />
-              </AreaChart>
-            </ChartContainer>
+            {alertTrendData.every((d) => d.critical + d.high + d.medium + d.low === 0) ? (
+              <div className="h-[280px] flex items-center justify-center text-xs text-muted-foreground">
+                در این بازه زمانی هیچ هشدار ثبت نشده است
+              </div>
+            ) : (
+              <ChartContainer config={chartConfig} className="h-[280px]">
+                <AreaChart data={alertTrendData} margin={{ left: 12, right: 12 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis allowDecimals={false} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <ChartLegend content={<ChartLegendContent />} />
+                  <Area type="monotone" dataKey="critical" name="بحرانی" stroke="var(--destructive)" fill="var(--destructive)" stackId="alerts" strokeWidth={2} isAnimationActive />
+                  <Area type="monotone" dataKey="high" name="بالا" stroke="var(--chart-3)" fill="var(--chart-3)" stackId="alerts" strokeWidth={2} isAnimationActive />
+                  <Area type="monotone" dataKey="medium" name="متوسط" stroke="var(--chart-4)" fill="var(--chart-4)" stackId="alerts" strokeWidth={2} isAnimationActive />
+                  <Area type="monotone" dataKey="low" name="پایین" stroke="var(--chart-5)" fill="var(--chart-5)" stackId="alerts" strokeWidth={2} isAnimationActive />
+                </AreaChart>
+              </ChartContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -377,30 +392,43 @@ export function AnalyticsCharts({ tanks, generators, alerts }: AnalyticsChartsPr
           </CardContent>
         </Card>
 
-        {/* Tank distribution (bar) */}
+        {/* Tank distribution (floating composition) */}
         <Card>
           <CardHeader>
-            <CardTitle>توزیع مخازن (ستونی)</CardTitle>
+            <CardTitle>توزیع مخازن (شناور و ترکیبی)</CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">ترکیب کل مخازن به تفکیک سوخت و آب؛ همراه با درصد و تعداد</p>
           </CardHeader>
           <CardContent>
-            <ChartContainer config={chartConfig} className="h-[260px]">
-              <BarChart data={tankDistribution} layout="horizontal">
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis dataKey="name" type="category" width={100} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]} isAnimationActive>
-                  {tankDistribution.map((entry, idx) => (
-                    <Cell key={`tank-${idx}`} fill={entry.fill} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ChartContainer>
+            {tankComposition[0].total === 0 ? (
+              <div className="h-[220px] flex items-center justify-center text-xs text-muted-foreground">هیچ مخزنی ثبت نشده است</div>
+            ) : (
+              <ChartContainer
+                config={{
+                  fuel: { label: "سوخت", color: "var(--chart-1)" },
+                  water: { label: "آب", color: "var(--chart-2)" },
+                }}
+                className="h-[220px]"
+              >
+                <BarChart data={tankComposition} layout="vertical" margin={{ top: 12, right: 24, left: 24, bottom: 12 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" />
+                  <YAxis dataKey="label" type="category" width={100} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <ChartLegend content={<ChartLegendContent />} />
+                  <Bar dataKey="fuel" name="سوخت" stackId="dist" fill="var(--chart-1)" radius={[6, 0, 0, 6]} isAnimationActive>
+                    <LabelList position="insideLeft" formatter={(v: number) => (v ? String(v) : "")} />
+                  </Bar>
+                  <Bar dataKey="water" name="آب" stackId="dist" fill="var(--chart-2)" isAnimationActive>
+                    <LabelList position="insideRight" formatter={(v: number) => (v ? String(v) : "")} />
+                  </Bar>
+                </BarChart>
+              </ChartContainer>
+            )}
           </CardContent>
         </Card>
 
         {/* Alert severity (bar) */}
-        {alertSeverity.length > 0 && (
+        {/* {alertSeverity.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle>شدت هشدارها (ستونی)</CardTitle>
@@ -421,7 +449,7 @@ export function AnalyticsCharts({ tanks, generators, alerts }: AnalyticsChartsPr
               </ChartContainer>
             </CardContent>
           </Card>
-        )}
+        )} */}
       </div>
     </div>
   )
