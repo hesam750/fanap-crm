@@ -284,49 +284,98 @@ async function generatePDF(_data: unknown, _reportType: string): Promise<Buffer>
         })
       }
     } else if (reportType === 'analytics') {
-      lines.push("بخش: تحلیل‌ها")
+      // خلاصه مدیریتی فارسی با KPIها، روندها، پیش‌بینی و هشدارها
+      lines.push("خلاصه مدیریتی")
       lines.push(sep)
-      const aggKeys = [
-        'totalEntities',
-        'averageUsage',
-        'peakUsageTime',
-        'lowUsageTime',
-      ]
-      if (data?.statistics) {
-        lines.push("آمار کل")
+
+      // آمار کلیدی
+      const stats = (data as any)?.statistics
+      if (stats) {
+        lines.push("آمار کلیدی")
         lines.push(sep)
-        aggKeys.forEach((k) => {
-          if (data.statistics[k] !== undefined) {
-            lines.push(`${k}: ${data.statistics[k]}`)
-          }
-        })
+        lines.push(`تعداد کل موجودیت‌ها: ${stats.overview?.totalEntities ?? '-'}`)
+        lines.push(`تعداد مخازن: ${stats.overview?.tanksCount ?? '-'} | تعداد ژنراتورها: ${stats.overview?.generatorsCount ?? '-'}`)
+        lines.push(`بازه گزارش: ${stats.overview?.timeframeHours ?? '-'} ساعت`)
+        lines.push(`میانگین سطح مخزن: ${stats.kpis?.avgTankLevelPercent ?? '-'}% | میانگین سطح ژنراتور: ${stats.kpis?.avgGeneratorLevelPercent ?? '-'}% | میانگین کل: ${stats.kpis?.avgOverallLevelPercent ?? '-'}%`)
+        lines.push(`مخازن بحرانی: ${stats.kpis?.criticalTanks ?? 0} | مخازن کم‌سطح: ${stats.kpis?.lowTanks ?? 0}`)
+        lines.push(`ژنراتورهای بحرانی: ${stats.kpis?.criticalGenerators ?? 0} | ژنراتورهای کم‌سطح: ${stats.kpis?.lowGenerators ?? 0}`)
+        lines.push(`آستانه هشدار کم‌سطح: ${stats.thresholds?.lowAlertThreshold ?? '-'}% | آستانه هشدار بحرانی: ${stats.thresholds?.criticalAlertThreshold ?? '-'}%`)
       }
-      if (data?.trends) {
+
+      // تحلیل روندها
+      const trends = (data as any)?.trends
+      if (trends) {
         lines.push("")
-        lines.push("روندها")
+        lines.push("تحلیل روندها")
         lines.push(sep)
-        Object.keys(data.trends).forEach((k) => {
-          lines.push(`${k}: ${data.trends[k]}`)
-        })
+        lines.push(`مدت بازه: ${trends.periodHours ?? '-'} ساعت`)
+        lines.push(`میانگین نرخ تغییر مخازن: ${trends.tanks?.avgChangeRate ?? 0}%`)
+        lines.push(`صعودی/نزولی/ثابت (مخازن): ${trends.tanks?.upCount ?? 0}/${trends.tanks?.downCount ?? 0}/${trends.tanks?.stableCount ?? 0}`)
+        const topTanks = trends.tanks?.topMovers || []
+        if (Array.isArray(topTanks) && topTanks.length) {
+          lines.push("بیشترین تغییر (مخازن):")
+          topTanks.forEach((i: any) => {
+            const trendLabel = i.trend === 'up' ? 'صعودی' : i.trend === 'down' ? 'نزولی' : 'ثابت'
+            lines.push(`- ${i.name}: ${i.changeRate}% (${trendLabel})`)
+          })
+        }
+        lines.push(`میانگین نرخ تغییر ژنراتورها: ${trends.generators?.avgChangeRate ?? 0}%`)
+        lines.push(`صعودی/نزولی/ثابت (ژنراتورها): ${trends.generators?.upCount ?? 0}/${trends.generators?.downCount ?? 0}/${trends.generators?.stableCount ?? 0}`)
+        const topGens = trends.generators?.topMovers || []
+        if (Array.isArray(topGens) && topGens.length) {
+          lines.push("بیشترین تغییر (ژنراتورها):")
+          topGens.forEach((i: any) => {
+            const trendLabel = i.trend === 'up' ? 'صعودی' : i.trend === 'down' ? 'نزولی' : 'ثابت'
+            lines.push(`- ${i.name}: ${i.changeRate}% (${trendLabel})`)
+          })
+        }
       }
-      if (data?.predictions) {
+
+      // پیش‌بینی و ریسک
+      const pred = (data as any)?.predictions
+      if (pred) {
         lines.push("")
-        lines.push("پیش‌بینی‌ها")
+        lines.push("پیش‌بینی و ریسک")
         lines.push(sep)
-        Object.keys(data.predictions).forEach((k) => {
-          lines.push(`${k}: ${data.predictions[k]}`)
-        })
+        lines.push(`مخازن در معرض ریسک: ${pred.summary?.atRiskTanksCount ?? 0}`)
+        if (Array.isArray(pred.atRisk?.tanks) && pred.atRisk.tanks.length) {
+          pred.atRisk.tanks.forEach((p: any) => {
+            const confLabel = p.confidence ? String(p.confidence) : ''
+            lines.push(`- ${p.name}: ${p.predictedDays} روز | ${p.recommendation ?? ''}${confLabel ? ' | اعتماد: ' + confLabel : ''}`)
+          })
+        }
+        lines.push(`ژنراتورهای در معرض ریسک: ${pred.summary?.atRiskGeneratorsCount ?? 0}`)
+        if (Array.isArray(pred.atRisk?.generators) && pred.atRisk.generators.length) {
+          pred.atRisk.generators.forEach((p: any) => {
+            const confLabel = p.confidence ? String(p.confidence) : ''
+            lines.push(`- ${p.name}: ${p.predictedHours} ساعت | ${p.recommendation ?? ''}${confLabel ? ' | اعتماد: ' + confLabel : ''}`)
+          })
+        }
+        if (Array.isArray(pred.recommendations) && pred.recommendations.length) {
+          lines.push("توصیه‌ها:")
+          pred.recommendations.forEach((r: string) => lines.push(`- ${r}`))
+        }
       }
-      if (Array.isArray(data?.alerts)) {
+
+      // هشدارهای مرتبط
+      const alerts = (data as any)?.alerts
+      if (alerts) {
         lines.push("")
         lines.push("هشدارهای مرتبط")
         lines.push(sep)
-        data.alerts.slice(0, 100).forEach((a: any, i: number) => {
-          const label = a.title ?? a.message ?? `هشدار ${i + 1}`
-          const sev = a.severity ?? a.level ?? ''
-          const ts = a.timestamp ? new Date(a.timestamp).toLocaleString('fa-IR') : ''
-          lines.push(`${label}${sev ? ' | شدت: ' + sev : ''}${ts ? ' | زمان: ' + ts : ''}`)
-        })
+        lines.push(`تعداد هشدارها: ${alerts.summary?.total ?? 0}`)
+        const sev = alerts.summary?.bySeverity || {}
+        lines.push(`شدت‌ها: بحرانی ${sev.critical ?? 0} | بالا ${sev.high ?? 0} | متوسط ${sev.medium ?? 0} | پایین ${sev.low ?? 0}`)
+        const recent = (alerts.items || []).slice(0, 10)
+        if (recent.length) {
+          lines.push("۱۰ هشدار اخیر:")
+          recent.forEach((a: any, i: number) => {
+            const label = a.title ?? a.message ?? a.id ?? `هشدار ${i + 1}`
+            const s = String(a.severity || a.level || '')
+            const ts = a.createdAt ? new Date(a.createdAt).toLocaleString('fa-IR') : (a.timestamp ? new Date(a.timestamp).toLocaleString('fa-IR') : '')
+            lines.push(`- ${label}${s ? ' | شدت: ' + s : ''}${ts ? ' | زمان: ' + ts : ''}`)
+          })
+        }
       }
     } else if (reportType === 'export') {
       lines.push("بخش: خروجی داده‌های خام")
@@ -449,38 +498,176 @@ async function calculateUsageTrend(history: Array<{ level: number }>): Promise<s
 }
 
 async function calculateStatistics(entityType: "tank" | "generator" | "all", _start: Date, _end: Date) {
-  // محاسبه آمار پیشرفته
+  // آمار واقعی بر اساس داده‌های سیستم و آستانه‌ها
+  const [tanks, generators, settings] = await Promise.all([
+    entityType === 'generator' ? Promise.resolve([]) : db.getTanks(),
+    entityType === 'tank' ? Promise.resolve([]) : db.getGenerators(),
+    db.getSystemSettings(),
+  ])
+
+  const lowAlertThreshold = Number(settings?.lowAlertThreshold ?? 20)
+  const criticalAlertThreshold = Number(settings?.criticalAlertThreshold ?? 10)
+
+  const tankPercents = tanks.map((t) => (t.capacity > 0 ? (t.currentLevel / t.capacity) * 100 : 0))
+  const genPercents = generators.map((g) => (g.capacity > 0 ? (g.currentLevel / g.capacity) * 100 : 0))
+
+  const avgTank = tankPercents.length ? tankPercents.reduce((a, b) => a + b, 0) / tankPercents.length : 0
+  const avgGen = genPercents.length ? genPercents.reduce((a, b) => a + b, 0) / genPercents.length : 0
+  const allPercents = tankPercents.concat(genPercents)
+  const avgOverall = allPercents.length ? allPercents.reduce((a, b) => a + b, 0) / allPercents.length : 0
+
+  const criticalTanks = tankPercents.filter((p) => p <= criticalAlertThreshold).length
+  const lowTanks = tankPercents.filter((p) => p > criticalAlertThreshold && p <= lowAlertThreshold).length
+  const criticalGenerators = genPercents.filter((p) => p <= criticalAlertThreshold).length
+  const lowGenerators = genPercents.filter((p) => p > criticalAlertThreshold && p <= lowAlertThreshold).length
+
+  const timeframeHours = Math.max(1, Math.ceil((_end.getTime() - _start.getTime()) / (60 * 60 * 1000)))
+
   return {
-    totalEntities: entityType === 'all' ? 
-      (await db.getTanks()).length + (await db.getGenerators()).length :
-      entityType === 'tank' ? 
-        (await db.getTanks()).length : 
-        (await db.getGenerators()).length,
-    averageUsage: "75%",
-    peakUsageTime: "14:00-16:00",
-    lowUsageTime: "02:00-04:00"
+    overview: {
+      totalEntities: tanks.length + generators.length,
+      tanksCount: tanks.length,
+      generatorsCount: generators.length,
+      timeframeHours,
+    },
+    kpis: {
+      avgTankLevelPercent: parseFloat(avgTank.toFixed(2)),
+      avgGeneratorLevelPercent: parseFloat(avgGen.toFixed(2)),
+      avgOverallLevelPercent: parseFloat(avgOverall.toFixed(2)),
+      criticalTanks,
+      lowTanks,
+      criticalGenerators,
+      lowGenerators,
+    },
+    thresholds: {
+      lowAlertThreshold,
+      criticalAlertThreshold,
+    },
   }
 }
 
-async function calculateTrends(_entityType: "tank" | "generator" | "all", _start: Date, _end: Date) {
-  // محاسبه روندها
+async function calculateTrends(entityType: "tank" | "generator" | "all", _start: Date, _end: Date) {
+  // محاسبه روندها بر اساس داده‌های واقعی در بازه زمانی
+  const [tanks, generators] = await Promise.all([
+    entityType === 'generator' ? Promise.resolve([]) : db.getTanks(),
+    entityType === 'tank' ? Promise.resolve([]) : db.getGenerators(),
+  ])
+
+  const periodHours = Math.max(1, Math.ceil((_end.getTime() - _start.getTime()) / (60 * 60 * 1000)))
+  const tankIds = tanks.map((t) => t.id)
+  const generatorIds = generators.map((g) => g.id)
+
+  const bulk = await db.getBulkTrends(tankIds, generatorIds, periodHours)
+
+  const summarize = (entries: Record<string, any>, entities: Array<{ id: string; name: string }>) => {
+    const items = entities.map((e) => {
+      const tr = entries?.[e.id] || {}
+      const changeRate = Number(tr?.percentage ?? tr?.changeRate ?? 0)
+      const trend: 'up' | 'down' | 'stable' = tr?.trend || 'stable'
+      return { id: e.id, name: e.name, changeRate, trend }
+    })
+
+    const avgChangeRate = items.length ? items.reduce((sum, i) => sum + i.changeRate, 0) / items.length : 0
+    const upCount = items.filter((i) => i.trend === 'up').length
+    const downCount = items.filter((i) => i.trend === 'down').length
+    const stableCount = items.filter((i) => i.trend === 'stable').length
+    const topMovers = items.sort((a, b) => Math.abs(b.changeRate) - Math.abs(a.changeRate)).slice(0, 5)
+
+    return {
+      avgChangeRate: parseFloat(avgChangeRate.toFixed(2)),
+      upCount,
+      downCount,
+      stableCount,
+      topMovers,
+    }
+  }
+
   return {
-    weeklyTrend: "+2%",
-    monthlyTrend: "+5%",
-    comparison: "10% بهتر از ماه گذشته"
+    periodHours,
+    tanks: summarize(bulk?.tanks || {}, tanks),
+    generators: summarize(bulk?.generators || {}, generators),
   }
 }
 
-async function generatePredictions(_entityType: "tank" | "generator" | "all") {
-  // تولید پیش‌بینی‌ها
+async function generatePredictions(entityType: "tank" | "generator" | "all") {
+  // تولید پیش‌بینی‌های دقیق و استخراج ریسک‌ها
+  const [tanks, generators] = await Promise.all([
+    entityType === 'generator' ? Promise.resolve([]) : db.getTanks(),
+    entityType === 'tank' ? Promise.resolve([]) : db.getGenerators(),
+  ])
+  const tankIds = tanks.map((t) => t.id)
+  const generatorIds = generators.map((g) => g.id)
+
+  const bulk = await db.getBulkPredictions(tankIds, generatorIds)
+
+  const tankPreds = tankIds.map((id) => ({
+    id,
+    name: tanks.find((t) => t.id === id)?.name || id,
+    ...(bulk?.tanks?.[id] || {}),
+  }))
+
+  const genPreds = generatorIds.map((id) => ({
+    id,
+    name: generators.find((g) => g.id === id)?.name || id,
+    ...(bulk?.generators?.[id] || {}),
+  }))
+
+  const atRiskTanks = tankPreds
+    .filter((p: any) => typeof p?.predictedDays === 'number' && p.predictedDays <= 2)
+    .sort((a: any, b: any) => (a.predictedDays ?? Number.POSITIVE_INFINITY) - (b.predictedDays ?? Number.POSITIVE_INFINITY))
+    .slice(0, 5)
+    .map((p: any) => ({ id: p.id, name: p.name, predictedDays: p.predictedDays, recommendation: p.recommendation, confidence: p.confidence }))
+
+  const atRiskGenerators = genPreds
+    .filter((p: any) => typeof p?.predictedHours === 'number' && p.predictedHours <= 24)
+    .sort((a: any, b: any) => (a.predictedHours ?? Number.POSITIVE_INFINITY) - (b.predictedHours ?? Number.POSITIVE_INFINITY))
+    .slice(0, 5)
+    .map((p: any) => ({ id: p.id, name: p.name, predictedHours: p.predictedHours, recommendation: p.recommendation, confidence: p.confidence }))
+
+  const recommendations: string[] = []
+  if (atRiskTanks.length > 0) recommendations.push("برنامه تأمین برای مخازن پرخطر ظرف ۴۸ ساعت انجام شود.")
+  if (atRiskGenerators.length > 0) recommendations.push("تأمین سوخت ژنراتورهای پرخطر و بررسی بار مصرف تا ۲۴ ساعت.")
+  if (atRiskTanks.length === 0 && atRiskGenerators.length === 0) recommendations.push("وضعیت پایدار است؛ پایش دوره‌ای ادامه یابد.")
+
   return {
-    next24h: "پایدار",
-    next7d: "کاهش ۳٪",
-    maintenanceAlert: "هیچ اخطاری وجود ندارد"
+    summary: {
+      atRiskTanksCount: atRiskTanks.length,
+      atRiskGeneratorsCount: atRiskGenerators.length,
+    },
+    tanks: tankPreds,
+    generators: genPreds,
+    atRisk: {
+      tanks: atRiskTanks,
+      generators: atRiskGenerators,
+    },
+    recommendations,
   }
 }
 
 async function getRelevantAlerts(_start: Date, _end: Date) {
-  // دریافت اخطارهای مربوطه
-  return [] as Array<Record<string, unknown>>
+  // دریافت و خلاصه‌سازی هشدارهای مرتبط با بازه زمانی
+  const all = await db.getAlerts()
+  const startTs = _start.getTime()
+  const endTs = _end.getTime()
+
+  const items = (Array.isArray(all) ? all : [])
+    .filter((a: any) => {
+      const ts = new Date(a.createdAt ?? a.timestamp ?? Date.now()).getTime()
+      return ts >= startTs && ts <= endTs
+    })
+    .sort((a: any, b: any) => new Date(b.createdAt ?? b.timestamp ?? Date.now()).getTime() - new Date(a.createdAt ?? a.timestamp ?? Date.now()).getTime())
+
+  const bySeverity = { critical: 0, high: 0, medium: 0, low: 0 } as Record<string, number>
+  items.forEach((a: any) => {
+    const sev = String(a.severity || a.level || '').toLowerCase()
+    if (bySeverity[sev] != null) bySeverity[sev]++
+  })
+
+  return {
+    items,
+    summary: {
+      total: items.length,
+      bySeverity,
+    },
+  }
 }

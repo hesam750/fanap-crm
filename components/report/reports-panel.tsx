@@ -91,6 +91,106 @@ const getTrendIcon = (trend?: TrendData) => {
   }
 }
 
+// نگاشت فارسی برای نوع فعالیت‌ها
+function getActivityTypeText(type: string): string {
+  const t = (type || "").toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/-/g, "_")
+
+  const map: Record<string, string> = {
+    task_assigned: "تخصیص وظیفه",
+    task_created: "ایجاد وظیفه",
+    task_create: "ایجاد وظیفه",
+    create_task: "ایجاد وظیفه",
+    task_updated: "به‌روزرسانی وظیفه",
+    update_task: "به‌روزرسانی وظیفه",
+    task_deleted: "حذف وظیفه",
+    delete_task: "حذف وظیفه",
+    alert_acknowledged: "تأیید هشدار",
+    acknowledge_alerts: "تأیید هشدارها",
+    level_updated: "به‌روزرسانی سطح",
+    update_levels: "به‌روزرسانی سطح",
+    add_tanks: "افزودن مخزن",
+    add_generators: "افزودن ژنراتور",
+    tank_added: "افزودن مخزن",
+    generator_added: "افزودن ژنراتور",
+    user_login: "ورود کاربر",
+    user_logout: "خروج کاربر",
+    system_settings_update: "به‌روزرسانی تنظیمات سیستم",
+    maintenance: "تعمیرات"
+  }
+
+  if (map[t]) return map[t]
+
+  // تلاش برای تبدیل کلی واژه‌ها
+  let s = t
+  s = s.replace(/task/g, "وظیفه")
+       .replace(/alert/g, "هشدار")
+       .replace(/generator/g, "ژنراتور")
+       .replace(/tank/g, "مخزن")
+       .replace(/update/g, "به‌روزرسانی")
+       .replace(/create/g, "ایجاد")
+       .replace(/delete/g, "حذف")
+       .replace(/add/g, "افزودن")
+       .replace(/_/g, " ")
+  // حروف اول بزرگ نباشد
+  return s.trim() || "—"
+}
+
+// ترجمه توضیحات رایج فعالیت‌ها به فارسی
+function translateActivityDescription(desc?: string): string {
+  if (!desc) return "—"
+  const d = String(desc)
+
+  // الگوهای رایج
+  const patterns: Array<{ re: RegExp; to: (m: RegExpMatchArray) => string }> = [
+    {
+      re: /Task ['"](.+?)['"] created and assigned to (.+)/i,
+      to: (m) => `وظیفه «${m[1]}» ایجاد شد و به ${m[2]} اختصاص یافت`,
+    },
+    {
+      re: /Task ['"](.+?)['"] updated/i,
+      to: (m) => `وظیفه «${m[1]}» به‌روزرسانی شد`,
+    },
+    {
+      re: /Task ['"](.+?)['"] deleted/i,
+      to: (m) => `وظیفه «${m[1]}» حذف شد`,
+    },
+    {
+      re: /Generator ['"](.+?)['"] added/i,
+      to: (m) => `ژنراتور «${m[1]}» افزوده شد`,
+    },
+    {
+      re: /Tank ['"](.+?)['"] added/i,
+      to: (m) => `مخزن «${m[1]}» افزوده شد`,
+    },
+    {
+      re: /Alert acknowledged/i,
+      to: () => "هشدار تأیید شد",
+    },
+    {
+      re: /User (.+) logged in/i,
+      to: (m) => `کاربر ${m[1]} وارد شد`,
+    },
+    {
+      re: /User (.+) logged out/i,
+      to: (m) => `کاربر ${m[1]} خارج شد`,
+    },
+    {
+      re: /(Tank|Generator) ['"](.+?)['"] level updated to (\d+)%/i,
+      to: (m) => `سطح ${m[1] === "Tank" ? "مخزن" : "ژنراتور"} «${m[2]}» به ${m[3]}٪ به‌روزرسانی شد`,
+    },
+  ]
+
+  for (const p of patterns) {
+    const match = d.match(p.re)
+    if (match) return p.to(match)
+  }
+
+  // اگر از قبل فارسی است یا الگوی خاصی ندارد، همان را نشان بده
+  return d
+}
+
 export function ReportsPanel({ tanks, generators, alerts }: ReportsPanelProps) {
   const [historyRecords, setHistoryRecords] = useState<HistoryRecord[]>([])
   // Activity Logs state
@@ -756,6 +856,112 @@ export function ReportsPanel({ tanks, generators, alerts }: ReportsPanelProps) {
           </CardContent>
         </Card>
 
+        {/* پیش‌بینی و ریسک */}
+        <Card>
+          <CardHeader>
+            <CardTitle>پیش‌بینی و ریسک</CardTitle>
+            <CardDescription>خلاصه وضعیت پرخطر و توصیه‌های عملیاتی</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              const tankRisks = tanks
+                .map((t) => ({ id: t.id, name: t.name, pred: predictions.get(t.id) }))
+                .filter((x) => typeof x.pred?.predictedDays === 'number' && (x.pred!.predictedDays as number) <= 2)
+                .sort((a, b) => ((a.pred!.predictedDays as number) - (b.pred!.predictedDays as number)))
+                .slice(0, 5)
+
+              const genRisks = generators
+                .map((g) => ({ id: g.id, name: g.name, pred: predictions.get(g.id) }))
+                .filter((x) => typeof x.pred?.predictedHours === 'number' && (x.pred!.predictedHours as number) <= 24)
+                .sort((a, b) => ((a.pred!.predictedHours as number) - (b.pred!.predictedHours as number)))
+                .slice(0, 5)
+
+              const recommendations: string[] = []
+              if (tankRisks.length) recommendations.push("برنامه تأمین برای مخازن پرخطر ظرف ۴۸ ساعت انجام شود.")
+              if (genRisks.length) recommendations.push("تأمین سوخت ژنراتورهای پرخطر و بررسی بار مصرف تا ۲۴ ساعت.")
+              if (!tankRisks.length && !genRisks.length) recommendations.push("وضعیت پایدار است؛ پایش دوره‌ای ادامه یابد.")
+
+              return (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="border rounded-lg p-4">
+                      <div className="font-medium mb-1">تعداد مخازن پرخطر</div>
+                      <div className="text-2xl">{tankRisks.length}</div>
+                    </div>
+                    <div className="border rounded-lg p-4">
+                      <div className="font-medium mb-1">تعداد ژنراتورهای پرخطر</div>
+                      <div className="text-2xl">{genRisks.length}</div>
+                    </div>
+                    <div className="border rounded-lg p-4">
+                      <div className="font-medium mb-1">به‌روزرسانی پیش‌بینی</div>
+                      <div className="text-muted-foreground">{lastUpdated ? lastUpdated.toLocaleString('fa-IR') : 'نامشخص'}</div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="border rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        <div className="font-medium">مخازن در معرض ریسک</div>
+                      </div>
+                      {tankRisks.length === 0 ? (
+                        <div className="text-sm text-muted-foreground">موردی یافت نشد</div>
+                      ) : (
+                        <div className="space-y-2">
+                          {tankRisks.map((x) => (
+                            <div key={x.id} className="flex items-center justify-between">
+                              <div>
+                                <div className="font-medium">{x.name}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {x.pred?.predictedDays} روز | {x.pred?.recommendation} | اعتماد: {x.pred?.confidence}
+                                </div>
+                              </div>
+                              <Badge variant="outline">روز</Badge>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="border rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                        <div className="font-medium">ژنراتورهای در معرض ریسک</div>
+                      </div>
+                      {genRisks.length === 0 ? (
+                        <div className="text-sm text-muted-foreground">موردی یافت نشد</div>
+                      ) : (
+                        <div className="space-y-2">
+                          {genRisks.map((x) => (
+                            <div key={x.id} className="flex items-center justify-between">
+                              <div>
+                                <div className="font-medium">{x.name}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {x.pred?.predictedHours} ساعت | {x.pred?.recommendation} | اعتماد: {x.pred?.confidence}
+                                </div>
+                              </div>
+                              <Badge variant="outline">ساعت</Badge>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="border rounded-lg p-4">
+                    <div className="font-medium mb-2">توصیه‌های عملیاتی</div>
+                    <div className="space-y-1">
+                      {recommendations.map((r, idx) => (
+                        <div key={idx} className="text-sm">- {r}</div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
+          </CardContent>
+        </Card>
+
         {/* لیست هشدارها */}
         <Card>
           <CardHeader>
@@ -810,8 +1016,8 @@ export function ReportsPanel({ tanks, generators, alerts }: ReportsPanelProps) {
                         <TableCell>
                           {new Intl.DateTimeFormat('fa-IR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(log.createdAt))}
                         </TableCell>
-                        <TableCell><Badge variant="outline">{log.type}</Badge></TableCell>
-                        <TableCell>{log.description}</TableCell>
+                        <TableCell><Badge variant="outline">{getActivityTypeText(log.type)}</Badge></TableCell>
+                        <TableCell>{translateActivityDescription(log.description)}</TableCell>
                         <TableCell>{log.userName || log.userId || '-'}</TableCell>
                       </TableRow>
                     ))}

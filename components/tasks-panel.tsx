@@ -20,9 +20,11 @@ import { AuthService } from "@/lib/auth"
     onUpdateTask?: (taskId: string, updates: Partial<Task>) => Promise<void> | void
     // New: allow deleting a task (root only in UI)
     onDeleteTask?: (taskId: string) => Promise<void> | void
+    // New: notify parent when a task is opened (to stop alarm)
+    onOpenTask?: (taskId: string) => void
   }
 
-  export function TasksPanel({ tasks, onCompleteTask, onUpdateChecklist, onUpdateTask, onDeleteTask }: TasksPanelProps) {
+  export function TasksPanel({ tasks, onCompleteTask, onUpdateChecklist, onUpdateTask, onDeleteTask, onOpenTask }: TasksPanelProps) {
     const auth = AuthService.getInstance()
     const currentUser = auth.getCurrentUser()
     const canComplete = auth.hasPermission("complete-task")
@@ -51,6 +53,8 @@ import { AuthService } from "@/lib/auth"
       const isAssignee = task.assignedTo === currentUser.id
       const canViewAsManager = auth.canManageTasks() || auth.isSuperAdmin() || auth.isManager() || auth.isSupervisor()
       if (!isAssignee && !canViewAsManager) return
+      // Notify parent that task is opened (for alarm stop)
+      try { onOpenTask?.(task.id) } catch {}
       setSelectedTask(task)
       setModalOpen(true)
     }

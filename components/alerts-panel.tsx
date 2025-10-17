@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { AlertTriangle, CheckCircle, Clock, X } from "lucide-react"
+import { AlertTriangle, CheckCircle, Clock, X, Bell, BellOff } from "lucide-react"
 import type { Alert } from "@/lib/types"
 import { AuthService } from "@/lib/auth"
 
@@ -11,13 +11,15 @@ interface AlertsPanelProps {
   alerts: Alert[]
   onAcknowledge?: (alertId: string) => void
   onDismiss?: (alertId: string) => void
-   
-  
+  selectedAlertIds?: string[]
+  onToggleAlertAlarm?: (alertId: string, enabled: boolean) => void
 }
 
-export function AlertsPanel({ alerts, onAcknowledge, onDismiss}: AlertsPanelProps) {
+export function AlertsPanel({ alerts, onAcknowledge, onDismiss, selectedAlertIds = [], onToggleAlertAlarm }: AlertsPanelProps) {
   const auth = AuthService.getInstance()
   const canManage = auth.hasPermission("acknowledge_alerts")
+
+  const isSelected = (id: string) => selectedAlertIds?.includes(String(id))
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -105,6 +107,15 @@ export function AlertsPanel({ alerts, onAcknowledge, onDismiss}: AlertsPanelProp
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => onDismiss?.(alert.id)}>
                         <X className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant={isSelected(String(alert.id)) ? "secondary" : "ghost"}
+                        onClick={() => onToggleAlertAlarm?.(String(alert.id), !isSelected(String(alert.id)))}
+                        title={isSelected(String(alert.id)) ? "قطع آلارم این هشدار" : "پخش آلارم برای این هشدار"}
+                      >
+                        {isSelected(String(alert.id)) ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
+                        <span className="ml-2 text-xs">آلارم این هشدار</span>
                       </Button>
                     </div>
                   )}

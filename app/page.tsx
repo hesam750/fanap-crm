@@ -21,6 +21,11 @@ import { AlertsPanel } from "@/components/alerts-panel"
 import Analytics from "@/components/analytics"
 import { WeeklyPlanningPanel } from "@/components/weekly-planning-panel"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { Slider } from "@/components/ui/slider"
+import { Button } from "@/components/ui/button"
+import { alarmManager } from "@/lib/alarm-manager"
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null)
@@ -33,6 +38,10 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("dashboard")
   const [users, setUsers] = useState<User[]>([])
   const [weeklyTasks, setWeeklyTasks] = useState<WeeklyTask[]>([])
+  const [alarmEnabled, setAlarmEnabled] = useState<boolean>(false)
+const [alarmScope, setAlarmScope] = useState<"all" | "tasks" | "selected-alerts">("selected-alerts")
+const [alarmVolume, setAlarmVolume] = useState<number>(alarmManager.getVolume())
+const [selectedAlertIds, setSelectedAlertIds] = useState<string[]>([])
 
   useEffect(() => {
     const auth = AuthService.getInstance()
@@ -47,12 +56,42 @@ export default function Home() {
     }
   }, [])
 
+  // Restore alarm enabled state and prepare audio after first paint
+  useEffect(() => {
+    alarmManager.restoreEnabledFromStorage()
+    setAlarmEnabled(alarmManager.isEnabled())
+    try {
+      const rawScope = typeof window !== "undefined" ? localStorage.getItem("alarmScope") : null
+      if (rawScope === "all" || rawScope === "tasks" || rawScope === "selected-alerts") {
+        setAlarmScope(rawScope as any)
+      }
+      const rawSel = typeof window !== "undefined" ? localStorage.getItem("selectedAlertIds") : null
+      if (rawSel) setSelectedAlertIds(JSON.parse(rawSel))
+      const savedVolRaw = typeof window !== "undefined" ? localStorage.getItem("alarmVolume") : null
+      if (savedVolRaw != null) {
+        const savedVol = Number(savedVolRaw)
+        if (!Number.isNaN(savedVol)) {
+          setAlarmVolume(savedVol)
+          alarmManager.setVolume(savedVol)
+        }
+      }
+    } catch {}
+  }, [])
+
   // Subscribe to server-sent events for real-time updates
   useEffect(() => {
     if (!user) return
 
     const es = new EventSource('/api/events')
     const toDate = (v: any) => (v ? new Date(v) : v)
+
+    const shouldRingAlert = (a: any) => {
+      if (a.acknowledged) return false
+      if (alarmScope === 'tasks') return false
+      if (alarmScope === 'all') return true
+      if (alarmScope === 'selected-alerts') return selectedAlertIds.includes(String(a.id))
+      return false
+    }
 
     // Task events
     es.addEventListener('task:created', (ev: MessageEvent) => {
@@ -66,6 +105,12 @@ export default function Home() {
           const exists = prev.some(t => String(t.id) === String(task.id))
           return exists ? prev.map(t => (String(t.id) === String(task.id) ? task : t)) : [task, ...prev]
         })
+        // Start alarm for tasks assigned to current user that are pending and not yet opened
+        if (alarmScope !== 'selected-alerts' && user && String(task.assignedTo) === String(user.id) && task.status === 'pending') {
+          if (!alarmManager.hasTaskBeenOpened(String(task.id))) {
+            alarmManager.startTaskAlarm(String(task.id), task.priority)
+          }
+        }
       } catch (e) {
         console.error('Failed to process task:created', e)
       }
@@ -79,6 +124,19 @@ export default function Home() {
         updated.dueDate = toDate(updated.dueDate)
         updated.completedAt = toDate(updated.completedAt)
         setTasks(prev => prev.map(t => (String(t.id) === String(updated.id) ? { ...t, ...updated } : t)))
+        // Stop alarm if task is no longer pending, or (re)start if it became pending for current user
+        if (alarmScope !== 'selected-alerts' && user && String(updated.assignedTo) === String(user.id)) {
+          if (updated.status === 'pending') {
+            if (!alarmManager.hasTaskBeenOpened(String(updated.id))) {
+              alarmManager.startTaskAlarm(String(updated.id), updated.priority)
+            }
+          } else {
+            alarmManager.stopTaskAlarm(String(updated.id))
+          }
+        } else {
+          // If task moved away from current user
+          alarmManager.stopTaskAlarm(String(updated.id))
+        }
       } catch (e) {
         console.error('Failed to process task:updated', e)
       }
@@ -88,6 +146,7 @@ export default function Home() {
       try {
         const { id } = JSON.parse(ev.data)
         setTasks(prev => prev.filter(t => String(t.id) !== String(id)))
+        alarmManager.stopTaskAlarm(String(id))
       } catch (e) {
         console.error('Failed to process task:deleted', e)
       }
@@ -135,6 +194,9 @@ export default function Home() {
           const exists = prev.some(a => String(a.id) === String(alert.id))
           return exists ? prev.map(a => (String(a.id) === String(alert.id) ? alert : a)) : [alert, ...prev]
         })
+        if (shouldRingAlert(alert)) {
+          alarmManager.startAlertAlarm(String(alert.id), alert.severity)
+        }
       } catch (e) {
         console.error('Failed to process alert:created', e)
       }
@@ -145,6 +207,13 @@ export default function Home() {
         const updated = JSON.parse(ev.data)
         updated.createdAt = toDate(updated.createdAt)
         setAlerts(prev => prev.map(a => (String(a.id) === String(updated.id) ? { ...a, ...updated } : a)))
+        if (updated.acknowledged) {
+          alarmManager.stopAlertAlarm(String(updated.id))
+        } else if (shouldRingAlert(updated)) {
+          alarmManager.startAlertAlarm(String(updated.id), updated.severity)
+        } else {
+          alarmManager.stopAlertAlarm(String(updated.id))
+        }
       } catch (e) {
         console.error('Failed to process alert:updated', e)
       }
@@ -154,6 +223,7 @@ export default function Home() {
       try {
         const { id } = JSON.parse(ev.data)
         setAlerts(prev => prev.filter(a => String(a.id) !== String(id)))
+        alarmManager.stopAlertAlarm(String(id))
       } catch (e) {
         console.error('Failed to process alert:deleted', e)
       }
@@ -166,7 +236,7 @@ export default function Home() {
     return () => {
       es.close()
     }
-  }, [user])
+  }, [user, alarmScope, selectedAlertIds])
 
   // به‌روزرسانی خودکار هشدارها بدون نیاز به رفرش صفحه
   useEffect(() => {
@@ -252,6 +322,60 @@ export default function Home() {
       console.error("Failed to load weekly tasks:", error)
     }
   }
+
+  // Sync current state to alarms (initial and whenever data changes)
+  useEffect(() => {
+    if (!user) return
+    // Only manage audio if enabled; if disabled, we just ensure audio is off
+    if (!alarmEnabled) {
+      alarmManager.disable()
+      // Stop all current alarms defensively
+      try {
+        for (const a of alerts) alarmManager.stopAlertAlarm(String(a.id))
+        for (const t of tasks) alarmManager.stopTaskAlarm(String(t.id))
+      } catch {}
+      return
+    }
+
+    // Alerts: respect alarm scope and acknowledgements
+    try {
+      for (const a of alerts) {
+        const id = String(a.id)
+        if (a.acknowledged) {
+          alarmManager.stopAlertAlarm(id)
+          continue
+        }
+        if (alarmScope === 'tasks') {
+          // In tasks-only scope, do not ring alerts
+          alarmManager.stopAlertAlarm(id)
+        } else if (alarmScope === 'all') {
+          alarmManager.startAlertAlarm(id, a.severity)
+        } else if (alarmScope === 'selected-alerts') {
+          if (selectedAlertIds.includes(id)) {
+            alarmManager.startAlertAlarm(id, a.severity)
+          } else {
+            alarmManager.stopAlertAlarm(id)
+          }
+        }
+      }
+    } catch {}
+
+    // Tasks: respect alarm scope; only ring for my pending tasks not opened
+    try {
+      for (const t of tasks) {
+        const id = String(t.id)
+        const isMine = String(t.assignedTo) === String(user.id)
+        const isPending = t.status === 'pending'
+        const notOpened = !alarmManager.hasTaskBeenOpened(id)
+        if (alarmScope !== 'selected-alerts' && isMine && isPending && notOpened) {
+          alarmManager.startTaskAlarm(id, t.priority)
+        } else {
+          // Ensure we don't keep beeping for completed/other users' tasks or when scope excludes tasks
+          alarmManager.stopTaskAlarm(id)
+        }
+      }
+    } catch {}
+  }, [user, alerts, tasks, alarmEnabled, alarmScope, selectedAlertIds])
 
   const handleCreateWeeklyTask = async (task: Omit<WeeklyTask, "id">) => {
     // Optimistic add without full refresh
@@ -488,6 +612,61 @@ export default function Home() {
       />
 
       <main className="container mx-auto px-6 py-6 space-y-6">
+        {/* تنظیمات آلارم صوتی */}
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="alarm-toggle">آلارم صوتی</Label>
+            <Switch
+              id="alarm-toggle"
+              checked={alarmEnabled}
+              onCheckedChange={(checked) => {
+                setAlarmEnabled(!!checked)
+                if (checked) alarmManager.enable()
+                else alarmManager.disable()
+              }}
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Label>دامنه</Label>
+            <Select
+              value={alarmScope}
+              onValueChange={(val) => {
+                setAlarmScope(val as any)
+                try { localStorage.setItem("alarmScope", val) } catch {}
+              }}
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="دامنه آلارم" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">همه هشدارها</SelectItem>
+                <SelectItem value="tasks">فقط تسک‌های من</SelectItem>
+                <SelectItem value="selected-alerts">هشدارهای انتخاب‌شده</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2 w-48">
+            <Label>بلندی صدا</Label>
+            <Slider
+              value={[alarmVolume]}
+              min={0}
+              max={1}
+              step={0.05}
+              onValueChange={(vals) => {
+                const v = Array.isArray(vals) ? Number(vals[0]) : 0
+                setAlarmVolume(v)
+                alarmManager.setVolume(v)
+                try { localStorage.setItem("alarmVolume", String(v)) } catch {}
+              }}
+            />
+          </div>
+
+          <Button variant="outline" onClick={() => alarmManager.muteFor(10 * 60 * 1000)}>
+            سکوت ۱۰ دقیقه‌ای
+          </Button>
+        </div>
               {auth.canAccessTab("dashboard") && (
           <AnimatePresence mode="wait">
             <motion.div
@@ -698,6 +877,9 @@ export default function Home() {
                             onUpdateChecklist={handleUpdateChecklist}
                             onUpdateTask={handleUpdateTask}
                             onDeleteTask={handleDeleteTask}
+                            onOpenTask={(taskId) => {
+                              try { alarmManager.onTaskOpened(String(taskId)) } catch {}
+                            }}
                           />
                         </motion.div>
                       </div>
@@ -766,6 +948,15 @@ export default function Home() {
                       alerts={alerts}
                       onAcknowledge={handleAcknowledgeAlert}
                       onDismiss={handleDismissAlert}
+                      selectedAlertIds={selectedAlertIds}
+                      onToggleAlertAlarm={(alertId, enabled) => {
+                        setSelectedAlertIds((prev) => {
+                          const id = String(alertId)
+                          const next = enabled ? Array.from(new Set([...prev, id])) : prev.filter((x) => x !== id)
+                          try { localStorage.setItem("selectedAlertIds", JSON.stringify(next)) } catch {}
+                          return next
+                        })
+                      }}
                     />
 
                     <div className="space-y-4">
