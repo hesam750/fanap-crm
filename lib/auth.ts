@@ -99,8 +99,9 @@ export class AuthService {
       if (raw) {
         const parsed = JSON.parse(raw)
         if (parsed && typeof parsed === 'object') {
-          this.tabAccessByRole = parsed
-          return this.tabAccessByRole
+          const mapping = parsed as Record<string, string[]>
+          this.tabAccessByRole = mapping
+          return mapping
         }
       }
     } catch {}

@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Settings, Bell, Database } from "lucide-react"
 import { AuthService } from "@/lib/auth"
-import type { User, Tank, Generator, WeeklyTask, SystemSettings } from "@/lib/types"
+import type { User, Tank, Generator, WeeklyTask, SystemSettings, Role } from "@/lib/types"
 import { WeeklyPlanningPanel } from "@/components/weekly-planning-panel"
 import { DynamicManagementPanel } from "@/components/dynamic-management-panel"
 import { UserManagementPanel } from "@/components/user-management-panel"
@@ -215,7 +215,7 @@ export function SuperAdminPanel({ currentUser, tanks = [], generators = [], onRe
             })
             return [role, Array.from(merged)]
           })
-        )
+        ) as Record<Role, string[]>
       }
       
       await apiClient.updateSystemSettings(settingsToSave)
