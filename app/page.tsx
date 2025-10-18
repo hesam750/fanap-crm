@@ -26,6 +26,8 @@ import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
 import { alarmManager } from "@/lib/alarm-manager"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Info } from "lucide-react"
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null)
@@ -59,6 +61,12 @@ const [selectedAlertIds, setSelectedAlertIds] = useState<string[]>([])
   // Restore alarm enabled state and prepare audio after first paint
   useEffect(() => {
     alarmManager.restoreEnabledFromStorage()
+    // Ensure alarm manager is enabled if stored setting is true
+    if (alarmManager.isEnabled()) {
+      alarmManager.enable()
+    }
+    // Prime Web Audio on first user gesture to bypass autoplay restriction
+    alarmManager.primeAudioOnUserGesture()
     setAlarmEnabled(alarmManager.isEnabled())
     try {
       const rawScope = typeof window !== "undefined" ? localStorage.getItem("alarmScope") : null
@@ -76,6 +84,28 @@ const [selectedAlertIds, setSelectedAlertIds] = useState<string[]>([])
         }
       }
     } catch {}
+  }, [])
+
+  // Listen for header modal changes to keep page state in sync
+  useEffect(() => {
+    const handler = (ev: Event) => {
+      const detail = (ev as CustomEvent).detail || {}
+      if (Object.prototype.hasOwnProperty.call(detail, "enabled")) {
+        setAlarmEnabled(!!detail.enabled)
+      }
+      if (Object.prototype.hasOwnProperty.call(detail, "scope")) {
+        setAlarmScope(detail.scope)
+      }
+      if (Object.prototype.hasOwnProperty.call(detail, "volume")) {
+        const v = Number(detail.volume)
+        if (!Number.isNaN(v)) {
+          setAlarmVolume(v)
+          alarmManager.setVolume(v)
+        }
+      }
+    }
+    window.addEventListener("alarm:settings_changed", handler as EventListener)
+    return () => window.removeEventListener("alarm:settings_changed", handler as EventListener)
   }, [])
 
   // Subscribe to server-sent events for real-time updates
@@ -593,6 +623,23 @@ const [selectedAlertIds, setSelectedAlertIds] = useState<string[]>([])
   const unacknowledgedAlerts = alerts.filter((alert) => !alert.acknowledged)
   const unreadNotifications = notifications.filter((n) => !n.read)
 
+  // محاسبه دلایل فعال بودن آلارم بر اساس دامنه و وضعیت‌ها
+  const activeAlertsForAlarm = alerts.filter((a) => {
+    if (a.acknowledged) return false
+    if (alarmScope === "tasks") return false
+    if (alarmScope === "all") return true
+    if (alarmScope === "selected-alerts") return selectedAlertIds.includes(String(a.id))
+    return false
+  })
+  const activeTasksForAlarm = tasks.filter((t) => {
+    const isMine = String(t.assignedTo) === String(user?.id)
+    const isPending = t.status === "pending"
+    const notOpened = !alarmManager.hasTaskBeenOpened(String(t.id))
+    if (alarmScope === "selected-alerts") return false
+    return isMine && isPending && notOpened
+  })
+  const alarmMuted = alarmManager.isMuted()
+
   function getDefaultTabForUser(auth: AuthService) {
     const order = ["dashboard", "analytics", "reports", "planning", "alerts", "admin"]
     for (const t of order) {
@@ -609,65 +656,15 @@ const [selectedAlertIds, setSelectedAlertIds] = useState<string[]>([])
         notificationCount={unreadNotifications.length}
         onLogout={handleLogout}
         onRefresh={handleRefreshData}
+        alerts={alerts}
+        tasks={tasks}
+        selectedAlertIds={selectedAlertIds}
+        alarmScope={alarmScope}
       />
 
       <main className="container mx-auto px-6 py-6 space-y-6">
-        {/* تنظیمات آلارم صوتی */}
-        <div className="flex flex-wrap items-center justify-end gap-3">
-          <div className="flex items-center gap-2">
-            <Label htmlFor="alarm-toggle">آلارم صوتی</Label>
-            <Switch
-              id="alarm-toggle"
-              checked={alarmEnabled}
-              onCheckedChange={(checked) => {
-                setAlarmEnabled(!!checked)
-                if (checked) alarmManager.enable()
-                else alarmManager.disable()
-              }}
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Label>دامنه</Label>
-            <Select
-              value={alarmScope}
-              onValueChange={(val) => {
-                setAlarmScope(val as any)
-                try { localStorage.setItem("alarmScope", val) } catch {}
-              }}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="دامنه آلارم" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">همه هشدارها</SelectItem>
-                <SelectItem value="tasks">فقط تسک‌های من</SelectItem>
-                <SelectItem value="selected-alerts">هشدارهای انتخاب‌شده</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="flex items-center gap-2 w-48">
-            <Label>بلندی صدا</Label>
-            <Slider
-              value={[alarmVolume]}
-              min={0}
-              max={1}
-              step={0.05}
-              onValueChange={(vals) => {
-                const v = Array.isArray(vals) ? Number(vals[0]) : 0
-                setAlarmVolume(v)
-                alarmManager.setVolume(v)
-                try { localStorage.setItem("alarmVolume", String(v)) } catch {}
-              }}
-            />
-          </div>
-
-          <Button variant="outline" onClick={() => alarmManager.muteFor(10 * 60 * 1000)}>
-            سکوت ۱۰ دقیقه‌ای
-          </Button>
-        </div>
-              {auth.canAccessTab("dashboard") && (
+        {/* حذف تنظیمات و خلاصه علت آلارم از صفحه‌ی داشبورد؛ همه در مدال هدر */}
+        {auth.canAccessTab("dashboard") && (
           <AnimatePresence mode="wait">
             <motion.div
               key="overview"

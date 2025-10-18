@@ -1,7 +1,7 @@
 import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "./provider";
-import { Metadata } from "next";
+import { Metadata, Viewport } from "next";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -16,7 +16,22 @@ const BYekan = localFont({
 export const metadata: Metadata = {
   title: "سیستم مدیریت مخازن",
   description: "سیستم مدیریت و نظارت بر مخازن سوخت و آب",
-  generator: 'fanap.app'
+  generator: 'fanap.app',
+  applicationName: 'سیستم مدیریت مخازن',
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: [{ url: '/placeholder-logo.png' }],
+    apple: [{ url: '/placeholder-logo.png' }],
+  },
+  appleWebApp: {
+    capable: true,
+    title: 'سیستم مدیریت مخازن',
+    statusBarStyle: 'black-translucent'
+  }
+}
+
+export const viewport: Viewport = {
+  themeColor: '#111827',
 }
 
 export default function RootLayout({

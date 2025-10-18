@@ -19,6 +19,7 @@ class AlarmManager {
   private gain: GainNode | null = null
   private beepInterval: ReturnType<typeof setInterval> | null = null
   private playing = false
+  private primed = false
 
   private ringingTaskIds = new Set<string>()
   private ringingAlertIds = new Set<string>()
@@ -197,6 +198,23 @@ class AlarmManager {
       // Fallback: do nothing if audio cannot be initialized
       console.warn("AlarmManager: failed to init audio", e)
     }
+  }
+
+  // Prime audio context resume on first user interaction to bypass autoplay restrictions
+  primeAudioOnUserGesture() {
+    if (typeof window === "undefined" || this.primed) return
+    this.primed = true
+    const handler = () => {
+      try {
+        this.ensureAudio()
+        if (this.audioCtx && this.audioCtx.state === "suspended") {
+          this.audioCtx.resume().catch(() => {})
+        }
+      } catch {}
+    }
+    window.addEventListener("click", handler, { once: true, passive: true })
+    window.addEventListener("touchstart", handler, { once: true, passive: true })
+    window.addEventListener("keydown", handler, { once: true })
   }
 
   private computeFrequency(): number {

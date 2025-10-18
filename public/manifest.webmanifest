@@ -1,0 +1,39 @@
+{
+  "name": "سیستم مدیریت مخازن",
+  "short_name": "مدیریت مخازن",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "lang": "fa",
+  "dir": "rtl",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/placeholder-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/placeholder-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "داشبورد",
+      "url": "/dashboard",
+      "description": "مشاهده داشبورد وضعیت"
+    },
+    {
+      "name": "گزارش‌ها",
+      "url": "/reports",
+      "description": "مشاهده و ساخت گزارش‌ها"
+    }
+  ]
+}

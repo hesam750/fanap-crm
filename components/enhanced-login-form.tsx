@@ -4,7 +4,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,9 +13,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { AuthService } from "@/lib/auth"
-import { Eye, EyeOff, Loader2, Shield, User, Lock, AlertCircle, CheckCircle } from "lucide-react"
+import { Eye, EyeOff, Loader2, Shield, User, Lock, AlertCircle, CheckCircle, Download } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 
 interface LoginFormProps {
@@ -31,6 +32,42 @@ export function EnhancedLoginForm({ onLogin }: LoginFormProps) {
   const [selectedDemo, setSelectedDemo] = useState<string | null>(null)
   const { toast } = useToast()
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+
+  // Ensure hydration-safe client-only UI
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+  // PWA install prompt on login page
+  const [installPromptEvent, setInstallPromptEvent] = useState<any | null>(null)
+  const [canInstall, setCanInstall] = useState(false)
+  const [installed, setInstalled] = useState(false)
+  const [isStandalone, setIsStandalone] = useState(false)
+  const [installDialogOpen, setInstallDialogOpen] = useState(false)
+  useEffect(() => {
+    const onBeforeInstallPrompt = (e: any) => {
+      e.preventDefault()
+      setInstallPromptEvent(e)
+      setCanInstall(true)
+    }
+    const onAppInstalled = () => {
+      setInstalled(true)
+      setInstallPromptEvent(null)
+      setCanInstall(false)
+    }
+    const checkStandalone = () => {
+      const isStandaloneDisplay = window.matchMedia('(display-mode: standalone)').matches
+      const isIosStandalone = (navigator as any).standalone === true
+      setIsStandalone(isStandaloneDisplay || isIosStandalone)
+    }
+    window.addEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+    window.addEventListener('appinstalled', onAppInstalled)
+    checkStandalone()
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt)
+      window.removeEventListener('appinstalled', onAppInstalled)
+    }
+  }, [])
 
   // instantiate email change handler with component state setters
   const handleEmailChange = createHandleEmailChange(setEmail, setAvatarPreview)
@@ -143,6 +180,58 @@ export function EnhancedLoginForm({ onLogin }: LoginFormProps) {
           </div> */}
           <h1 className="text-3xl font-bold tracking-tight">سیستم مدیریت مخازن</h1>
           <p className="text-muted-foreground">سامانه نظارت و کنترل مخازن سوخت و آب</p>
+
+          {/* Install App button on login page */}
+          {mounted && !isStandalone && !installed && (
+            <Dialog open={installDialogOpen && !canInstall} onOpenChange={setInstallDialogOpen}>
+              <div className="flex justify-center pt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      if (canInstall && installPromptEvent) {
+                        await installPromptEvent.prompt()
+                        const choice = await installPromptEvent.userChoice
+                        if (choice && choice.outcome === 'accepted') {
+                          setCanInstall(false)
+                        }
+                      } else {
+                        setInstallDialogOpen(true)
+                      }
+                    } catch (err) {
+                      console.log('install error', err)
+                    }
+                  }}
+                >
+                  <Download className="mr-1 h-4 w-4" />
+                  نصب اپلیکیشن
+                </Button>
+              </div>
+              {!canInstall && (
+                <DialogContent className="max-w-md" dir="rtl">
+                  <DialogHeader>
+                    <DialogTitle>نصب اپلیکیشن</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-3 text-sm">
+                    <div>
+                      <div className="font-medium">دسکتاپ (Chrome/Edge)</div>
+                      <div className="text-muted-foreground">آیکون نصب کنار نوار آدرس یا منو → Install App</div>
+                    </div>
+                    <div>
+                      <div className="font-medium">اندروید (Chrome)</div>
+                      <div className="text-muted-foreground">منوی مرورگر → Add to Home screen</div>
+                    </div>
+                    <div>
+                      <div className="font-medium">iOS (Safari)</div>
+                      <div className="text-muted-foreground">دکمه Share → Add to Home Screen</div>
+                    </div>
+                    <div className="text-xs text-muted-foreground">اگر دکمه نصب مستقیم ندارید، از روش‌های بالا نصب را انجام دهید.</div>
+                  </div>
+                </DialogContent>
+              )}
+            </Dialog>
+          )}
         </div>
 
         {/* Login Card */}
