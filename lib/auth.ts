@@ -27,7 +27,11 @@ export class AuthService {
         const { user } = await response.json()
         this.currentUser = user
         // Store user in localStorage for UI state, but auth token is in cookie
-        localStorage.setItem("currentUser", JSON.stringify(user))
+        try {
+          if (typeof window !== "undefined") {
+            localStorage.setItem("currentUser", JSON.stringify(user))
+          }
+        } catch {}
         return user
       }
 
@@ -47,21 +51,32 @@ export class AuthService {
       console.error("Logout error:", error)
     } finally {
       this.currentUser = null
-      localStorage.removeItem("currentUser")
+      try {
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("currentUser")
+        }
+      } catch {}
     }
   }
 
   getCurrentUser(): User | null {
+    // SSR-safe: avoid accessing localStorage on server
+    if (typeof window === "undefined") {
+      return this.currentUser ?? null
+    }
+
     if (!this.currentUser) {
-      const stored = localStorage.getItem("currentUser")
-      if (stored) {
-        const parsed = JSON.parse(stored)
-        // Ensure permissions is always an array to avoid runtime errors in UI
-        if (!Array.isArray(parsed.permissions)) {
-          parsed.permissions = parsed.role === "root" ? ["*"] : []
+      try {
+        const stored = localStorage.getItem("currentUser")
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          // Ensure permissions is always an array to avoid runtime errors in UI
+          if (!Array.isArray(parsed.permissions)) {
+            parsed.permissions = parsed.role === "root" ? ["*"] : []
+          }
+          this.currentUser = parsed
         }
-        this.currentUser = parsed
-      }
+      } catch {}
     } else {
       // Normalize in-memory user as well
       if (!Array.isArray(this.currentUser.permissions)) {
@@ -84,7 +99,9 @@ export class AuthService {
       if (mapping && typeof mapping === 'object') {
         this.tabAccessByRole = mapping
         try {
-          localStorage.setItem('tabAccessByRole', JSON.stringify(mapping))
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('tabAccessByRole', JSON.stringify(mapping))
+          }
         } catch {}
       }
     } catch (e) {
@@ -94,6 +111,19 @@ export class AuthService {
 
   private getTabAccessByRole(): Record<string, string[]> {
     if (this.tabAccessByRole) return this.tabAccessByRole
+
+    // Avoid localStorage on server; provide fallback mapping
+    if (typeof window === 'undefined') {
+      this.tabAccessByRole = {
+        root: ['*'],
+        manager: ['dashboard','analytics','reports','planning','alerts','inventory','admin:tasks'],
+        supervisor: ['dashboard','analytics','reports','planning','alerts','inventory'],
+        operator: ['dashboard','planning','alerts','inventory'],
+        monitor: ['dashboard','reports','analytics','alerts'],
+      }
+      return this.tabAccessByRole
+    }
+
     try {
       const raw = localStorage.getItem('tabAccessByRole')
       if (raw) {
@@ -108,9 +138,9 @@ export class AuthService {
     // Default mapping if nothing is loaded yet
     this.tabAccessByRole = {
       root: ['*'],
-      manager: ['dashboard','analytics','reports','planning','alerts','admin:tasks'],
-      supervisor: ['dashboard','analytics','reports','planning','alerts'],
-      operator: ['dashboard','planning','alerts'],
+      manager: ['dashboard','analytics','reports','planning','alerts','inventory','admin:tasks'],
+      supervisor: ['dashboard','analytics','reports','planning','alerts','inventory'],
+      operator: ['dashboard','planning','alerts','inventory'],
       monitor: ['dashboard','reports','analytics','alerts'],
     }
     return this.tabAccessByRole
@@ -119,12 +149,15 @@ export class AuthService {
   // Tab-based RBAC check
   canAccessTab(tabId: string): boolean {
     const user = this.getCurrentUser()
-    if (!user || !user.isActive) return false
+    if (!user) return false
+    // Root باید همیشه دسترسی کامل داشته باشد
     if (user.role === 'root') return true
+    // برای سایر نقش‌ها وضعیت فعال بودن را بررسی کن
+    if (!user.isActive) return false
     const mapping = this.getTabAccessByRole()
     const tabs = mapping[user.role] || []
     if (tabs.includes('*')) return true
-    // Admin section visibility: if any admin:* is allowed, treat top-level 'admin' as accessible
+    // اگر تب سطح بالا "admin" است و هر زیرتب admin:* مجاز بود، قابل دسترسی است
     if (tabId === 'admin') {
       return tabs.some(t => t.startsWith('admin:'))
     }
