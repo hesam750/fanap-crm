@@ -650,17 +650,20 @@ const [selectedAlertIds, setSelectedAlertIds] = useState<string[]>([])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-300 dark:from-gray-800 dark:to-gray-900">
-      <DashboardHeader
-        user={user}
-        alertCount={unacknowledgedAlerts.length}
-        notificationCount={unreadNotifications.length}
-        onLogout={handleLogout}
-        onRefresh={handleRefreshData}
-        alerts={alerts}
-        tasks={tasks}
-        selectedAlertIds={selectedAlertIds}
-        alarmScope={alarmScope}
-      />
+      {user && (
+        <DashboardHeader
+          user={user}
+          alertCount={unacknowledgedAlerts.length}
+          notificationCount={unreadNotifications.length}
+          onLogout={handleLogout}
+          onRefresh={handleRefreshData}
+          alerts={alerts}
+          tasks={tasks}
+          selectedAlertIds={selectedAlertIds}
+          alarmScope={alarmScope}
+          showMobileMenuTrigger={false}
+        />
+      )}
 
       <main className="container mx-auto px-6 py-6 space-y-6">
         {/* حذف تنظیمات و خلاصه علت آلارم از صفحه‌ی داشبورد؛ همه در مدال هدر */}

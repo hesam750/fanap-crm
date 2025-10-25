@@ -1,4 +1,3 @@
-// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,49 +9,258 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  email       String   @unique
-  password    String
-  name        String
-  role        Role     @default(operator)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  avatarUrl   String?
-
-  
-  tasks           Task[]           @relation("AssignedTo")
-  assignedTasks   Task[]           @relation("AssignedBy")
-  tanks           Tank[]           @relation("TankUpdatedBy")
-  generators      Generator[]      @relation("GeneratorUpdatedBy")
-  alerts          Alert[]          @relation("AlertAcknowledgedBy")
-  historicalData  HistoricalData[] @relation("HistoricalDataRecordedBy")
-  activityLogs    ActivityLog[]    @relation("ActivityLogUser")
+  id             String           @id @default(uuid())
+  email          String           @unique
+  password       String
+  name           String
+  role           Role             @default(operator)
+  isActive       Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  avatarUrl      String?
+  activityLogs   ActivityLog[]    @relation("ActivityLogUser")
+  alerts         Alert[]          @relation("AlertAcknowledgedBy")
+  generators     Generator[]      @relation("GeneratorUpdatedBy")
+  historicalData HistoricalData[] @relation("HistoricalDataRecordedBy")
+  tanks          Tank[]           @relation("TankUpdatedBy")
+  assignedTasks  Task[]           @relation("AssignedBy")
+  tasks          Task[]           @relation("AssignedTo")
 
   @@map("users")
 }
 
-
-// prisma/schema.prisma
 model WeeklyTask {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
   description String?
-  assignedTo  String[] // یا می‌توانید یک رابطه جداگانه ایجاد کنید
-  dayOfWeek   Int      // 0-6 (شنبه تا جمعه)
-  timeSlot    String   // مثال: "09:00"
-  priority    String   // low, medium, high, critical
-  recurring   Boolean  @default(false)
-  status      String   // pending, in_progress, completed, cancelled
-  type        String   // maintenance, fuel, water, generator, other
+  assignedTo  String[]
+  dayOfWeek   Int
+  timeSlot    String
+  priority    String
+  recurring   Boolean   @default(false)
+  status      String
+  type        String
   equipment   String?
   duration    Int?
   dueDate     DateTime?
   completedBy String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@map("weekly_tasks")
+}
+
+model Tank {
+  id             String           @id @default(uuid())
+  name           String
+  type           TankType
+  capacity       Int
+  currentLevel   Float            @default(0)
+  percentage     Float?
+  location       String?
+  isActive       Boolean          @default(true)
+  updatedBy      String
+  lastUpdated    DateTime         @default(now())
+  createdAt      DateTime         @default(now())
+  alerts         Alert[]          @relation("TankAlerts")
+  historicalData HistoricalData[] @relation("TankHistoricalData")
+  user           User             @relation("TankUpdatedBy", fields: [updatedBy], references: [id])
+
+  @@map("tanks")
+}
+
+model Generator {
+  id             String           @id @default(uuid())
+  name           String
+  capacity       Int              @default(900)
+  currentLevel   Float            @default(0)
+  status         GeneratorStatus
+  location       String?
+  isActive       Boolean          @default(true)
+  updatedBy      String
+  lastUpdated    DateTime         @default(now())
+  createdAt      DateTime         @default(now())
+  alerts         Alert[]          @relation("GeneratorAlerts")
+  user           User             @relation("GeneratorUpdatedBy", fields: [updatedBy], references: [id])
+  historicalData HistoricalData[] @relation("GeneratorHistoricalData")
+
+  @@map("generators")
+}
+
+model Task {
+  id             String     @id @default(uuid())
+  title          String
+  description    String?
+  assignedTo     String
+  assignedBy     String
+  status         TaskStatus @default(pending)
+  priority       Priority   @default(medium)
+  dueDate        DateTime?
+  completedAt    DateTime?
+  checklist      Json?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  operatorNote   String?
+  assignedByUser User       @relation("AssignedBy", fields: [assignedBy], references: [id])
+  assignedToUser User       @relation("AssignedTo", fields: [assignedTo], references: [id])
+
+  @@map("tasks")
+}
+
+model Alert {
+  id             String     @id @default(uuid())
+  type           AlertType
+  message        String
+  severity       Severity
+  tankId         String?
+  generatorId    String?
+  acknowledged   Boolean    @default(false)
+  acknowledgedBy String?
+  acknowledgedAt DateTime?
+  createdAt      DateTime   @default(now())
+  user           User?      @relation("AlertAcknowledgedBy", fields: [acknowledgedBy], references: [id])
+  generator      Generator? @relation("GeneratorAlerts", fields: [generatorId], references: [id])
+  tank           Tank?      @relation("TankAlerts", fields: [tankId], references: [id])
+
+  @@map("alerts")
+}
+
+model HistoricalData {
+  id          String     @id @default(uuid())
+  entityType  EntityType
+  tankId      String?
+  generatorId String?
+  levelValue  Float
+  recordedBy  String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  generator   Generator? @relation("GeneratorHistoricalData", fields: [generatorId], references: [id])
+  user        User       @relation("HistoricalDataRecordedBy", fields: [recordedBy], references: [id])
+  tank        Tank?      @relation("TankHistoricalData", fields: [tankId], references: [id])
+
+  @@index([entityType, tankId])
+  @@index([entityType, generatorId])
+  @@index([createdAt])
+  @@map("historical_data")
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  type        String
+  description String
+  userId      String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  user        User?    @relation("ActivityLogUser", fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@index([type])
+  @@map("activity_logs")
+}
+
+model InventoryCategory {
+  id        String                @id @default(uuid())
+  name      String
+  type      InventoryCategoryType
+  parentId  String?
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+  parent    InventoryCategory?    @relation("CategoryParent", fields: [parentId], references: [id])
+  children  InventoryCategory[]   @relation("CategoryParent")
+  items     InventoryItem[]
+
+  @@map("inventory_categories")
+}
+
+model InventoryItem {
+  id           String             @id @default(uuid())
+  sku          String             @unique
+  name         String
+  description  String?
+  categoryId   String
+  unit         String
+  minStock     Int?
+  reorderPoint Int?
+  serializable Boolean            @default(false)
+  isActive     Boolean            @default(true)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  category     InventoryCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  transactions StockTransaction[]
+
+  @@map("inventory_items")
+}
+
+model Warehouse {
+  id        String     @id @default(uuid())
+  name      String
+  code      String?    @unique
+  address   String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  locations Location[]
+
+  @@map("warehouses")
+}
+
+model Location {
+  id               String             @id @default(uuid())
+  warehouseId      String
+  name             String
+  code             String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  warehouse        Warehouse          @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  fromTransactions StockTransaction[] @relation("FromLocationTransactions")
+  toTransactions   StockTransaction[] @relation("ToLocationTransactions")
+
+  @@map("locations")
+}
+
+model Supplier {
+  id            String             @id @default(uuid())
+  name          String
+  code          String?            @unique
+  contactPerson String?
+  phone         String?
+  email         String?
+  address       String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  transactions  StockTransaction[]
+
+  @@map("suppliers")
+}
+
+model StockTransaction {
+  id             String                     @id @default(uuid())
+  type           InventoryTransactionType
+  itemId         String
+  lotNumber      String?
+  supplierId     String?
+  quantity       Float
+  unit           String
+  fromLocationId String?
+  toLocationId   String?
+  requestedBy    String
+  approvedBy     String?
+  postedBy       String?
+  status         InventoryTransactionStatus @default(requested)
+  referenceType  String?
+  referenceId    String?
+  note           String?
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+  fromLocation   Location?                  @relation("FromLocationTransactions", fields: [fromLocationId], references: [id])
+  item           InventoryItem              @relation(fields: [itemId], references: [id])
+  supplier       Supplier?                  @relation(fields: [supplierId], references: [id])
+  toLocation     Location?                  @relation("ToLocationTransactions", fields: [toLocationId], references: [id])
+
+  @@index([itemId])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+  @@map("stock_transactions")
 }
 
 enum Role {
@@ -62,79 +270,15 @@ enum Role {
   supervisor
 }
 
-model Tank {
-  id            String   @id @default(uuid())
-  name          String
-  type          TankType
-  capacity      Int
-  currentLevel  Float   @default(0)
-  percentage    Float?  // اضافه کردن فیلد percentage
-  location      String?
-  isActive      Boolean @default(true)
-  updatedBy     String
-  lastUpdated   DateTime @default(now())
-  createdAt     DateTime @default(now())
-  
-  // Relations
-  user          User     @relation(fields: [updatedBy], references: [id], name: "TankUpdatedBy")
-  alerts        Alert[]  @relation("TankAlerts")
-  historicalData HistoricalData[] @relation("TankHistoricalData")
-  
-  @@map("tanks")
-}
-
-
 enum TankType {
   fuel
   water
-}
-
-model Generator {
-  id          String   @id @default(uuid())
-  name        String
-  capacity    Int      @default(900)
-  currentLevel Float   @default(0)
-  status      GeneratorStatus 
-  location    String?
-  isActive    Boolean  @default(true)
-  updatedBy   String
-  lastUpdated DateTime @default(now())
-  createdAt   DateTime @default(now())
-  
-  // Relations
-  user        User     @relation(fields: [updatedBy], references: [id], name: "GeneratorUpdatedBy")
-  alerts      Alert[]  @relation("GeneratorAlerts")
-  historicalData HistoricalData[] @relation("GeneratorHistoricalData")
-  
-  @@map("generators")
 }
 
 enum GeneratorStatus {
   running
   stopped
   maintenance
-}
-
-model Task {
-  id          String      @id @default(uuid())
-  title       String
-  description String?
-  operatorNote String?
-  assignedTo  String
-  assignedBy  String
-  status      TaskStatus  @default(pending)
-  priority    Priority    @default(medium)
-  dueDate     DateTime?
-  completedAt DateTime?
-  checklist   Json?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  
-  // Relations
-  assignedToUser User     @relation("AssignedTo", fields: [assignedTo], references: [id])
-  assignedByUser User     @relation("AssignedBy", fields: [assignedBy], references: [id])
-  
-  @@map("tasks")
 }
 
 enum TaskStatus {
@@ -151,26 +295,6 @@ enum Priority {
   critical
 }
 
-model Alert {
-  id            String    @id @default(uuid())
-  type          AlertType
-  message       String
-  severity      Severity
-  tankId        String?
-  generatorId   String?
-  acknowledged  Boolean   @default(false)
-  acknowledgedBy String?
-  acknowledgedAt DateTime?
-  createdAt     DateTime  @default(now())
-  
-  // Relations
-  tank          Tank?     @relation(fields: [tankId], references: [id], name: "TankAlerts")
-  generator     Generator? @relation(fields: [generatorId], references: [id], name: "GeneratorAlerts")
-  user          User?     @relation(fields: [acknowledgedBy], references: [id], name: "AlertAcknowledgedBy")
-  
-  @@map("alerts")
-}
-
 enum AlertType {
   low_fuel
   low_water
@@ -185,45 +309,30 @@ enum Severity {
   critical
 }
 
-model HistoricalData {
-  id           String   @id @default(uuid())
-  entityType   EntityType
-  tankId       String? 
-  generatorId  String?  
-  levelValue   Float
-  recordedBy   String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
-  // Relations
-  user         User     @relation(fields: [recordedBy], references: [id], name: "HistoricalDataRecordedBy")
-  tank         Tank?    @relation(fields: [tankId], references: [id], name: "TankHistoricalData")
-  generator    Generator? @relation(fields: [generatorId], references: [id], name: "GeneratorHistoricalData")
-  
-  @@map("historical_data")
-  @@index([entityType, tankId])
-  @@index([entityType, generatorId])
-  @@index([createdAt])
-}
-
-
 enum EntityType {
   tank
   generator
 }
 
-model ActivityLog {
-  id          String   @id @default(uuid())
-  type        String
-  description String
-  userId      String?
-  metadata    Json?
-  createdAt   DateTime @default(now())
-  
-  // Relations
-  user        User?    @relation(fields: [userId], references: [id], name: "ActivityLogUser")
-  
-  @@map("activity_logs")
-  @@index([createdAt])
-  @@index([type])
+enum InventoryCategoryType {
+  spare
+  tool
+  consumable
+  other
+}
+
+enum InventoryTransactionType {
+  receipt
+  issue
+  return
+  transfer
+  adjustment
+}
+
+enum InventoryTransactionStatus {
+  requested
+  approved
+  posted
+  rejected
+  void
 }

@@ -3,7 +3,7 @@
 
 
 import { PrismaClient, Prisma } from '@prisma/client'
-import type { User, Tank, Generator, HistoryRecord, WeeklyTask, PrismaHistoricalData, PrismaGetDataSummary, PrismaTank, PrismaGenerator, Notification } from './types'
+import type { User, Tank, Generator, HistoryRecord, WeeklyTask, PrismaHistoricalData, PrismaGetDataSummary, PrismaTank, PrismaGenerator, Notification, InventoryItem, InventoryCategory, Warehouse, Location, Supplier, InventoryTransactionType, InventoryTransactionStatus, StockTransaction, StockLevel } from './types'
 
 // Initialize Prisma client (serverless-safe singleton)
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
@@ -14,6 +14,31 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 export class DatabaseService {
   private static instance: DatabaseService
   private notifications: Notification[] = []
+
+  // ===== In-memory Inventory Store (temporary until Prisma models) =====
+  private inventoryCategories: InventoryCategory[] = [
+    { id: 'cat-spare', name: 'قطعات یدکی', type: 'spare', parentId: null, createdAt: new Date(), updatedAt: new Date() },
+    { id: 'cat-tool', name: 'ابزارآلات', type: 'tool', parentId: null, createdAt: new Date(), updatedAt: new Date() },
+  ]
+
+  private inventoryItems: InventoryItem[] = [
+    { id: 'item-brg-6205', sku: 'BRG-6205', name: 'بلبرینگ 6205', categoryId: 'cat-spare', unit: 'عدد', minStock: 5, reorderPoint: 10, serializable: false, isActive: true, createdAt: new Date(), updatedAt: new Date() },
+    { id: 'item-wrench-10mm', sku: 'WR-10MM', name: 'آچار تخت 10mm', categoryId: 'cat-tool', unit: 'عدد', isActive: true, createdAt: new Date(), updatedAt: new Date() },
+  ]
+
+  private warehouses: Warehouse[] = [
+    { id: 'wh-central', name: 'انبار مرکزی', code: 'WH-01', address: 'سایت صنعتی فناپ', createdAt: new Date(), updatedAt: new Date() },
+  ]
+
+  private locations: Location[] = [
+    { id: 'loc-a1', warehouseId: 'wh-central', name: 'ردیف A - قفسه 1', code: 'A1', createdAt: new Date(), updatedAt: new Date() },
+  ]
+
+  private suppliers: Supplier[] = [
+    { id: 'sup-abc', name: 'تأمینکننده ABC', code: 'SUP-001', phone: '021-12345678', createdAt: new Date(), updatedAt: new Date() },
+  ]
+
+  private stockTransactions: StockTransaction[] = []
   // In-memory system settings (fallback until DB storage is wired)
   private systemSettings: any = {
     lowAlertThreshold: 20,
@@ -1664,6 +1689,484 @@ async calculateGeneratorPrediction(id: string): Promise<any> {
       timestamp: new Date().toISOString()
     };
   }
+  // ===== Inventory Methods =====
+
+  async getInventoryCategories(): Promise<InventoryCategory[]> {
+    try {
+      return await prisma.inventoryCategory.findMany()
+    } catch (e) {
+      return this.inventoryCategories
+    }
+  }
+
+  async createInventoryCategory(data: Omit<InventoryCategory, "id" | "createdAt" | "updatedAt">): Promise<InventoryCategory> {
+    try {
+      return await prisma.inventoryCategory.create({
+        data: {
+          name: data.name,
+          type: data.type as any,
+          parentId: data.parentId ?? null,
+        },
+      })
+    } catch (e) {
+      const newCategory: InventoryCategory = {
+        id: 'cat-' + Math.random().toString(36).slice(2),
+        name: data.name,
+        type: data.type as any,
+        parentId: data.parentId ?? null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+      this.inventoryCategories.push(newCategory)
+      return newCategory
+    }
+  }
+
+  async updateInventoryCategory(id: string, updates: Partial<InventoryCategory>): Promise<InventoryCategory | null> {
+    try {
+      return await prisma.inventoryCategory.update({
+        where: { id },
+        data: {
+          name: updates.name,
+          type: updates.type as any,
+          parentId: updates.parentId ?? null,
+        },
+      })
+    } catch (e) {
+      const idx = this.inventoryCategories.findIndex((c) => c.id === id)
+      if (idx === -1) return null
+      const existing = this.inventoryCategories[idx]
+      const updated: InventoryCategory = {
+        ...existing,
+        name: typeof updates.name === 'string' ? updates.name : existing.name,
+        type: (updates.type ?? existing.type) as any,
+        parentId: typeof updates.parentId === 'string' ? updates.parentId : (updates.parentId === null ? null : existing.parentId),
+        updatedAt: new Date(),
+      }
+      this.inventoryCategories[idx] = updated
+      return updated
+    }
+  }
+
+  async deleteInventoryCategory(id: string): Promise<boolean> {
+    try {
+      await prisma.inventoryCategory.delete({ where: { id } })
+      return true
+    } catch (e) {
+      return false
+    }
+  }
+
+  async getInventoryItems(): Promise<InventoryItem[]> {
+    try {
+      return await prisma.inventoryItem.findMany()
+    } catch (e) {
+      return this.inventoryItems
+    }
+  }
+
+  async createInventoryItem(data: Omit<InventoryItem, "id" | "createdAt" | "updatedAt">): Promise<InventoryItem> {
+    try {
+      return await prisma.inventoryItem.create({
+        data: {
+          sku: data.sku,
+          name: data.name,
+          description: data.description,
+          categoryId: data.categoryId,
+          unit: data.unit,
+          minStock: data.minStock,
+          reorderPoint: data.reorderPoint,
+          serializable: data.serializable ?? false,
+          isActive: data.isActive ?? true,
+        },
+      })
+    } catch (e) {
+      const newItem: InventoryItem = {
+        id: 'item-' + Math.random().toString(36).slice(2),
+        sku: data.sku,
+        name: data.name,
+        description: data.description,
+        categoryId: data.categoryId,
+        unit: data.unit,
+        minStock: data.minStock,
+        reorderPoint: data.reorderPoint,
+        serializable: data.serializable ?? false,
+        isActive: data.isActive ?? true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+      this.inventoryItems.push(newItem)
+      return newItem
+    }
+  }
+
+  async updateInventoryItem(id: string, updates: Partial<InventoryItem>): Promise<InventoryItem | null> {
+    try {
+      return await prisma.inventoryItem.update({
+        where: { id },
+        data: {
+          sku: updates.sku,
+          name: updates.name,
+          description: updates.description,
+          categoryId: updates.categoryId,
+          unit: updates.unit,
+          minStock: updates.minStock,
+          reorderPoint: updates.reorderPoint,
+          serializable: updates.serializable,
+          isActive: updates.isActive,
+        },
+      })
+    } catch (e) {
+      // Fallback to in-memory update when Prisma is unavailable
+      const idx = this.inventoryItems.findIndex((it) => it.id === id)
+      if (idx === -1) return null
+      const existing = this.inventoryItems[idx]
+      const updated: InventoryItem = {
+        ...existing,
+        sku: updates.sku ?? existing.sku,
+        name: updates.name ?? existing.name,
+        description: updates.description ?? existing.description,
+        categoryId: updates.categoryId ?? existing.categoryId,
+        unit: updates.unit ?? existing.unit,
+        minStock: typeof updates.minStock === 'number' ? updates.minStock : existing.minStock,
+        reorderPoint: typeof updates.reorderPoint === 'number' ? updates.reorderPoint : existing.reorderPoint,
+        serializable: typeof updates.serializable === 'boolean' ? updates.serializable : existing.serializable,
+        isActive: typeof updates.isActive === 'boolean' ? updates.isActive : existing.isActive,
+        updatedAt: new Date(),
+      }
+      this.inventoryItems[idx] = updated
+      return updated
+    }
+  }
+
+  async deleteInventoryItem(id: string): Promise<boolean> {
+    try {
+      await prisma.inventoryItem.delete({ where: { id } })
+      return true
+    } catch (e) {
+      // Fallback to in-memory delete when Prisma is unavailable
+      const idx = this.inventoryItems.findIndex((it) => it.id === id)
+      if (idx === -1) return false
+      this.inventoryItems.splice(idx, 1)
+      return true
+    }
+  }
+
+  async getWarehouses(): Promise<Warehouse[]> {
+    try {
+      return await prisma.warehouse.findMany()
+    } catch (e) {
+      return this.warehouses
+    }
+  }
+
+  async createWarehouse(data: Omit<Warehouse, "id" | "createdAt" | "updatedAt">): Promise<Warehouse> {
+    try {
+      return await prisma.warehouse.create({
+        data: {
+          name: data.name,
+          code: data.code,
+          address: data.address,
+        },
+      })
+    } catch (e) {
+      const wh: Warehouse = {
+        id: 'wh-' + Math.random().toString(36).slice(2),
+        name: data.name,
+        code: data.code,
+        address: data.address,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+      this.warehouses.unshift(wh)
+      return wh
+    }
+  }
+
+  // افزودن: یافتن انبار با کد برای اعتبارسنجی یکتایی
+  async getWarehouseByCode(code: string): Promise<Warehouse | null> {
+    try {
+      return await prisma.warehouse.findUnique({ where: { code } })
+    } catch (e) {
+      const c = (code || '').toLowerCase()
+      return this.warehouses.find((w) => (w.code || '').toLowerCase() === c) || null
+    }
+  }
+
+  async updateWarehouse(id: string, updates: Partial<Warehouse>): Promise<Warehouse | null> {
+    try {
+      return await prisma.warehouse.update({
+        where: { id },
+        data: {
+          name: updates.name,
+          code: updates.code,
+          address: updates.address,
+        },
+      })
+    } catch (e) {
+      const idx = this.warehouses.findIndex((w) => w.id === id)
+      if (idx === -1) return null
+      const existing = this.warehouses[idx]
+      const updated: Warehouse = {
+        ...existing,
+        name: typeof updates.name === 'string' ? updates.name : existing.name,
+        code: typeof updates.code === 'string' ? updates.code : existing.code,
+        address: typeof updates.address === 'string' ? updates.address : existing.address,
+        updatedAt: new Date(),
+      }
+      this.warehouses[idx] = updated
+      return updated
+    }
+  }
+
+  async deleteWarehouse(id: string): Promise<boolean> {
+    try {
+      await prisma.warehouse.delete({ where: { id } })
+      return true
+    } catch (e) {
+      const idx = this.warehouses.findIndex((w) => w.id === id)
+      if (idx === -1) return false
+      this.warehouses.splice(idx, 1)
+      return true
+    }
+  }
+
+  async getLocations(warehouseId?: string): Promise<Location[]> {
+    return prisma.location.findMany({
+      where: warehouseId ? { warehouseId } : undefined,
+    })
+  }
+
+  async createLocation(data: Omit<Location, "id" | "createdAt" | "updatedAt">): Promise<Location> {
+    return prisma.location.create({
+      data: {
+        warehouseId: data.warehouseId,
+        name: data.name,
+        code: data.code,
+      },
+    })
+  }
+
+  async getSuppliers(): Promise<Supplier[]> {
+    return prisma.supplier.findMany()
+  }
+
+  async createSupplier(data: Omit<Supplier, "id" | "createdAt" | "updatedAt">): Promise<Supplier> {
+    return prisma.supplier.create({
+      data: {
+        name: data.name,
+        code: data.code,
+        contactPerson: data.contactPerson,
+        phone: data.phone,
+        email: data.email,
+        address: data.address,
+      },
+    })
+  }
+
+  async getStockTransactions(filters: Partial<{ status: InventoryTransactionStatus; type: InventoryTransactionType; itemId: string }>): Promise<StockTransaction[]> {
+    try {
+      const where: any = {}
+      if (filters?.status) where.status = filters.status as any
+      if (filters?.type) where.type = filters.type as any
+      if (filters?.itemId) where.itemId = filters.itemId
+      return await prisma.stockTransaction.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+      })
+    } catch (e) {
+      const arr = this.stockTransactions.filter((t) => {
+        if (filters?.status && t.status !== filters.status) return false
+        if (filters?.type && t.type !== filters.type) return false
+        if (filters?.itemId && t.itemId !== filters.itemId) return false
+        return true
+      })
+      const toTime = (d: Date | string) => (typeof d === 'string' ? new Date(d) : d).getTime()
+      return arr.sort((a, b) => toTime(b.createdAt) - toTime(a.createdAt))
+    }
+  }
+
+  async getStockTransactionById(id: string): Promise<StockTransaction | null> {
+    try {
+      const trx = await prisma.stockTransaction.findUnique({ where: { id } })
+      return trx ?? null
+    } catch (e) {
+      return this.stockTransactions.find((t) => t.id === id) ?? null
+    }
+  }
+
+  async createStockTransaction(data: Omit<StockTransaction, "id" | "createdAt" | "updatedAt" | "status"> & { status?: InventoryTransactionStatus }): Promise<StockTransaction> {
+    try {
+      return await prisma.stockTransaction.create({
+        data: {
+          type: data.type as any,
+          itemId: data.itemId,
+          lotNumber: data.lotNumber,
+          supplierId: data.supplierId,
+          quantity: data.quantity,
+          unit: data.unit,
+          fromLocationId: data.fromLocationId ?? null,
+          toLocationId: data.toLocationId ?? null,
+          requestedBy: data.requestedBy,
+          approvedBy: data.approvedBy ?? null,
+          postedBy: data.postedBy ?? null,
+          status: (data.status ?? 'requested') as any,
+          referenceType: data.referenceType ?? null,
+          referenceId: data.referenceId ?? null,
+          note: data.note ?? null,
+        },
+      })
+    } catch (e) {
+      const newTrx: StockTransaction = {
+        id: `trx_${Math.random().toString(36).slice(2)}`,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        type: data.type,
+        itemId: data.itemId,
+        lotNumber: data.lotNumber,
+        supplierId: data.supplierId,
+        quantity: data.quantity,
+        unit: data.unit,
+        fromLocationId: data.fromLocationId ?? null,
+        toLocationId: data.toLocationId ?? null,
+        requestedBy: data.requestedBy,
+        approvedBy: data.approvedBy ?? null,
+        postedBy: data.postedBy ?? null,
+        status: data.status ?? 'requested',
+        referenceType: data.referenceType ?? null,
+        referenceId: data.referenceId ?? null,
+        note: data.note ?? null,
+      }
+      this.stockTransactions.push(newTrx)
+      return newTrx
+    }
+  }
+
+  async updateStockTransaction(id: string, updates: Partial<StockTransaction>): Promise<StockTransaction | null> {
+    try {
+      return await prisma.stockTransaction.update({
+        where: { id },
+        data: {
+          type: (updates.type as any) ?? undefined,
+          lotNumber: updates.lotNumber,
+          supplierId: updates.supplierId,
+          quantity: updates.quantity,
+          unit: updates.unit,
+          fromLocationId: updates.fromLocationId ?? undefined,
+          toLocationId: updates.toLocationId ?? undefined,
+          requestedBy: updates.requestedBy,
+          approvedBy: updates.approvedBy ?? undefined,
+          postedBy: updates.postedBy ?? undefined,
+          status: (updates.status as any) ?? undefined,
+          referenceType: updates.referenceType ?? undefined,
+          referenceId: updates.referenceId ?? undefined,
+          note: updates.note ?? undefined,
+        },
+      })
+    } catch (e) {
+      return null
+    }
+  }
+
+  async getStockLevels(): Promise<StockLevel[]> {
+    try {
+      const posted = await prisma.stockTransaction.findMany({
+        where: { status: 'posted' as any },
+        select: {
+          itemId: true,
+          unit: true,
+          fromLocationId: true,
+          toLocationId: true,
+          quantity: true,
+          type: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'asc' },
+      })
+      const levels = new Map<string, StockLevel>()
+
+      const keyFor = (itemId: string, locationId: string) => `${itemId}::${locationId}`
+
+      for (const t of posted) {
+        const unit = t.unit
+        const apply = (itemId: string, locationId: string, delta: number) => {
+          const k = keyFor(itemId, locationId)
+          const curr = levels.get(k)
+          const nextQty = (curr?.quantity ?? 0) + delta
+          levels.set(k, { itemId, locationId, quantity: nextQty, unit, updatedAt: new Date() })
+        }
+
+        switch (t.type as InventoryTransactionType) {
+          case "receipt":
+            if (t.toLocationId) apply(t.itemId, t.toLocationId, t.quantity)
+            break
+          case "issue":
+            if (t.fromLocationId) apply(t.itemId, t.fromLocationId, -t.quantity)
+            break
+          case "return":
+            {
+              const dest = t.toLocationId || t.fromLocationId
+              if (dest) apply(t.itemId, dest, t.quantity)
+            }
+            break
+          case "transfer":
+            if (t.fromLocationId) apply(t.itemId, t.fromLocationId, -t.quantity)
+            if (t.toLocationId) apply(t.itemId, t.toLocationId, t.quantity)
+            break
+          case "adjustment":
+            if (t.toLocationId) apply(t.itemId, t.toLocationId, t.quantity)
+            break
+        }
+      }
+
+      return Array.from(levels.values())
+    } catch (e) {
+      const posted = this.stockTransactions
+        .filter((t) => t.status === 'posted')
+        .sort((a, b) => {
+          const toTime = (d: Date | string) => (typeof d === 'string' ? new Date(d) : d).getTime()
+          return toTime(a.createdAt) - toTime(b.createdAt)
+        })
+
+      const levels = new Map<string, StockLevel>()
+      const keyFor = (itemId: string, locationId: string) => `${itemId}::${locationId}`
+
+      for (const t of posted) {
+        const unit = t.unit
+        const apply = (itemId: string, locationId: string, delta: number) => {
+          const k = keyFor(itemId, locationId)
+          const curr = levels.get(k)
+          const nextQty = (curr?.quantity ?? 0) + delta
+          levels.set(k, { itemId, locationId, quantity: nextQty, unit, updatedAt: new Date() })
+        }
+
+        switch (t.type as InventoryTransactionType) {
+          case "receipt":
+            if (t.toLocationId) apply(t.itemId, t.toLocationId, t.quantity)
+            break
+          case "issue":
+            if (t.fromLocationId) apply(t.itemId, t.fromLocationId, -t.quantity)
+            break
+          case "return":
+            {
+              const dest = t.toLocationId || t.fromLocationId
+              if (dest) apply(t.itemId, dest, t.quantity)
+            }
+            break
+          case "transfer":
+            if (t.fromLocationId) apply(t.itemId, t.fromLocationId, -t.quantity)
+            if (t.toLocationId) apply(t.itemId, t.toLocationId, t.quantity)
+            break
+          case "adjustment":
+            if (t.toLocationId) apply(t.itemId, t.toLocationId, t.quantity)
+            break
+        }
+      }
+
+      return Array.from(levels.values())
+    }
+  }
+
   // Cleanup
   async disconnect(): Promise<void> {
     await prisma.$disconnect()

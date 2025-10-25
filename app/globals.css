@@ -137,6 +137,11 @@
     outline-color: color-mix(in oklch, var(--ring) 50%, transparent);
   }
   
+  html {
+    /* جلوگیری از جابه‌جایی عرض صفحه هنگام نمایش/پنهان‌کردن اسکرول‌بار */
+    scrollbar-gutter: stable both-edges;
+  }
+  
   body {
     background-color: var(--background);
     font-family: var(--font-b-yekan), var(--font-geist-sans), sans-serif;

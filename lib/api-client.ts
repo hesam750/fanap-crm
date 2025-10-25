@@ -365,10 +365,126 @@ class ApiClient {
   async deleteNotification(id: string) {
     return this.delete<{ message: string }>(`/api/notifications/${id}`)
   }
+
+  // Inventory: Categories
+  async getInventoryCategories() {
+    return this.get<{ categories: InventoryCategory[] }>(`/api/inventory/categories`)
+  }
+
+  async createInventoryCategory(data: Partial<InventoryCategory> & { name: string; type: InventoryCategory["type"]; parentId?: string | null }) {
+    return this.post<{ category: InventoryCategory }>(`/api/inventory/categories`, data)
+  }
+
+  async updateInventoryCategory(id: string, updates: Partial<InventoryCategory>) {
+    return this.put<{ category: InventoryCategory }>(`/api/inventory/categories/${id}`, updates)
+  }
+
+  async deleteInventoryCategory(id: string) {
+    return this.delete<{ message: string }>(`/api/inventory/categories/${id}`)
+  }
+
+  // Inventory: Items
+  async getInventoryItems() {
+    return this.get<{ items: InventoryItem[] }>(`/api/inventory/items`)
+  }
+
+  async createInventoryItem(data: Omit<InventoryItem, "id" | "createdAt" | "updatedAt">) {
+    return this.post<{ item: InventoryItem }>(`/api/inventory/items`, data)
+  }
+
+  async updateInventoryItem(id: string, updates: Partial<InventoryItem>) {
+    return this.put<{ item: InventoryItem }>(`/api/inventory/items/${id}`, updates)
+  }
+
+  async deleteInventoryItem(id: string) {
+    return this.delete<{ message: string }>(`/api/inventory/items/${id}`)
+  }
+
+  // Inventory: Transactions
+  async getStockTransactions(params: { status?: InventoryTransactionStatus; type?: InventoryTransactionType; itemId?: string } = {}) {
+    const q = new URLSearchParams()
+    if (params.status) q.set('status', String(params.status))
+    if (params.type) q.set('type', String(params.type))
+    if (params.itemId) q.set('itemId', params.itemId)
+    const qs = q.toString() ? `?${q.toString()}` : ''
+    return this.get<{ transactions: StockTransaction[] }>(`/api/inventory/transactions${qs}`)
+  }
+
+  async createStockTransaction(data: Omit<StockTransaction, "id" | "createdAt" | "updatedAt">) {
+    return this.post<{ transaction: StockTransaction }>(`/api/inventory/transactions`, data)
+  }
+
+  async updateStockTransaction(id: string, updates: Partial<StockTransaction>) {
+    return this.put<{ transaction: StockTransaction }>(`/api/inventory/transactions/${id}`, updates)
+  }
+
+  // Inventory: Stock Levels
+  async getStockLevels() {
+    return this.get<{ stockLevels: StockLevel[] }>(`/api/inventory/stock-levels`)
+  }
+
+  // Inventory: Warehouses
+  async getWarehouses() {
+    return this.get<{ warehouses: Warehouse[] }>(`/api/inventory/warehouses`)
+  }
+
+  async createWarehouse(data: Omit<Warehouse, "id" | "createdAt" | "updatedAt">) {
+    return this.post<{ warehouse: Warehouse }>(`/api/inventory/warehouses`, data)
+  }
+
+  async updateWarehouse(id: string, updates: Partial<Warehouse>) {
+    return this.put<{ warehouse: Warehouse }>(`/api/inventory/warehouses/${id}`, updates)
+  }
+
+  async deleteWarehouse(id: string) {
+    return this.delete<{ message: string }>(`/api/inventory/warehouses/${id}`)
+  }
+
+  // Inventory: Locations
+  async getLocations(warehouseId?: string) {
+    const qs = warehouseId ? `?warehouseId=${encodeURIComponent(warehouseId)}` : ''
+    return this.get<{ locations: Location[] }>(`/api/inventory/locations${qs}`)
+  }
+
+  async createLocation(data: Omit<Location, "id" | "createdAt" | "updatedAt">) {
+    return this.post<{ location: Location }>(`/api/inventory/locations`, data)
+  }
+
+  // Inventory: Suppliers
+  async getSuppliers() {
+    return this.get<{ suppliers: Supplier[] }>(`/api/inventory/suppliers`)
+  }
+
+  async createSupplier(data: Omit<Supplier, "id" | "createdAt" | "updatedAt">) {
+    return this.post<{ supplier: Supplier }>(`/api/inventory/suppliers`, data)
+  }
+
+  // Documents
+  async getDocuments(search?: string) {
+    const qs = search ? `?search=${encodeURIComponent(search)}` : ""
+    return this.get<{ documents: Document[] }>(`/api/documents${qs}`)
+  }
+
+  async uploadDocument(file: File) {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch(`/api/documents`, {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`API Error: ${response.status} ${response.statusText} ${errorText}`)
+    }
+
+    return response.json()
+  }
 }
 
 export const apiClient = new ApiClient()
 
 // Types referenced in method signatures
-import type { User, SystemSettings, Tank, Generator, Task, CreateTaskInput, Alert, Notification, WeeklyTask } from "./types"
+import type { User, SystemSettings, Tank, Generator, Task, CreateTaskInput, Alert, Notification, WeeklyTask, InventoryCategory, InventoryItem, StockTransaction, StockLevel, InventoryTransactionStatus, InventoryTransactionType, Warehouse, Location, Supplier, Document } from "./types"
 import type { ActivityLog } from "./types"

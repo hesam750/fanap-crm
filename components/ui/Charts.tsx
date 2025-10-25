@@ -76,10 +76,10 @@ export default function Charts() {
         <h3 className="text-lg font-bold mb-4">وضعیت مخازن</h3>
         <Doughnut data={tankData} options={options} />
       </div>
-      <div className="bg-gray-800 p-6 rounded-lg shadow">
+      {/* <div className="bg-gray-800 p-6 rounded-lg shadow">
         <h3 className="text-lg font-bold mb-4">وضعیت ژنراتورها</h3>
         <Bar data={generatorData} options={options} />
-      </div>
+      </div> */}
     </div>
   );
 }

@@ -16,38 +16,52 @@ async function main() {
   await prisma.generator.deleteMany()
   await prisma.tank.deleteMany()
   await prisma.user.deleteMany()
+  // پاک‌سازی موجودی و انبار برای جلوگیری از تضاد یکتا
+  await prisma.stockTransaction.deleteMany()
+  await prisma.location.deleteMany()
+  await prisma.warehouse.deleteMany()
+  await prisma.inventoryItem.deleteMany()
+  await prisma.inventoryCategory.deleteMany()
+  await prisma.supplier.deleteMany()
 
   console.log('🧹 Cleaned existing data')
 
-  // ایجاد کاربران
+  // ایجاد کاربران (طبق درخواست)
   const users = await prisma.user.createMany({
     data: [
       {
-        email: 'root@example.com',
+        email: 'hossein.karjou@fanap.com',
         password: await hash('root123', 12),
-        name: 'سوپر ادمین سیستم',
+        name: 'حسین کارجو',
         role: Role.root,
         isActive: true,
       },
       {
-        email: 'manager@example.com',
-        password: await hash('manager123', 12),
-        name: 'مدیر سیستم',
+        email: 'ebrahim.rezai@fanap.com',
+        password: await hash('a123', 12),
+        name: 'ابراهیم رضایی',
         role: Role.manager,
         isActive: true,
       },
       {
-        email: 'operator@example.com',
-        password: await hash('operator123', 12),
-        name: 'اپراتور سیستم',
+        email: 'mohammad.binandeh@fanap.com',
+        password: await hash('os123', 12),
+        name: 'محمد بیننده',
         role: Role.operator,
         isActive: true,
       },
       {
-        email: 'supervisor@example.com',
-        password: await hash('supervisor123', 12),
-        name: 'ناظر سیستم',
-        role: Role.supervisor,
+        email: 'seyed.taher.mohammadi.asl@fanap.com',
+        password: await hash('a123', 12),
+        name: 'سید طاهر محمدی اصل',
+        role: Role.operator,
+        isActive: true,
+      },
+      {
+        email: 'mahdi.rezai@fanap.com',
+        password: await hash('a123', 12),
+        name: 'مهدی رضایی',
+        role: Role.operator,
         isActive: true,
       },
     ],
@@ -56,49 +70,24 @@ async function main() {
   console.log('👥 Created users')
 
   // گرفتن آی دی کاربران
-  const userRoot = await prisma.user.findFirst({ where: { email: 'root@example.com' } })
-  const userManager = await prisma.user.findFirst({ where: { email: 'manager@example.com' } })
-  const userOperator = await prisma.user.findFirst({ where: { email: 'operator@example.com' } })
+  const userRoot = await prisma.user.findFirst({ where: { email: 'hossein.karjou@fanap.com' } })
+  const userManager = await prisma.user.findFirst({ where: { email: 'ebrahim.rezai@fanap.com' } })
+  const userOperator = await prisma.user.findFirst({ where: { email: 'mohammad.binandeh@fanap.com' } })
 
-  // ایجاد مخازن
+  // ایجاد مخازن (طبق مشخصات پمپ‌خانه)
   const tanks = await prisma.tank.createMany({
     data: [
-      {
-        name: 'مخزن سوخت اصلی',
-        type: TankType.fuel,
-        capacity: 10000,
-        currentLevel: 85.5,
-        location: 'سالن اصلی - قسمت شرقی',
-        updatedBy: userRoot!.id,
-        isActive: true,
-      },
-      {
-        name: 'مخزن سوخت یدکی',
-        type: TankType.fuel,
-        capacity: 5000,
-        currentLevel: 45.2,
-        location: 'سالن ذخیره‌سازی',
-        updatedBy: userManager!.id,
-        isActive: true,
-      },
-      {
-        name: 'مخزن آب اصلی',
-        type: TankType.water,
-        capacity: 15000,
-        currentLevel: 92.1,
-        location: 'ساختمان مرکزی',
-        updatedBy: userRoot!.id,
-        isActive: true,
-      },
-      {
-        name: 'مخزن آب اضطراری',
-        type: TankType.water,
-        capacity: 8000,
-        currentLevel: 78.3,
-        location: 'طبقه همکف',
-        updatedBy: userManager!.id,
-        isActive: true,
-      },
+      // آب - پمپ‌خانه
+      { name: 'آب مصرفی', type: TankType.water, capacity: 20000, currentLevel: 80.0, location: 'پمپ خانه', updatedBy: userManager!.id, isActive: true },
+      { name: 'آتش‌نشانی', type: TankType.water, capacity: 20000, currentLevel: 85.0, location: 'پمپ خانه', updatedBy: userRoot!.id, isActive: true },
+      { name: 'فضای سبز', type: TankType.water, capacity: 10000, currentLevel: 70.0, location: 'پمپ خانه', updatedBy: userManager!.id, isActive: true },
+      { name: 'پیش‌تصفیه', type: TankType.water, capacity: 5000, currentLevel: 65.0, location: 'پمپ خانه', updatedBy: userManager!.id, isActive: true },
+      { name: 'آب شرب', type: TankType.water, capacity: 1000, currentLevel: 90.0, location: 'پمپ خانه', updatedBy: userRoot!.id, isActive: true },
+      // سوخت - ۴ تانکر ۵۰۰۰ لیتری
+      { name: 'تانکر سوخت 1', type: TankType.fuel, capacity: 5000, currentLevel: 75.0, location: 'پمپ خانه', updatedBy: userRoot!.id, isActive: true },
+      { name: 'تانکر سوخت 2', type: TankType.fuel, capacity: 5000, currentLevel: 60.0, location: 'پمپ خانه', updatedBy: userManager!.id, isActive: true },
+      { name: 'تانکر سوخت 3', type: TankType.fuel, capacity: 5000, currentLevel: 55.0, location: 'پمپ خانه', updatedBy: userManager!.id, isActive: true },
+      { name: 'تانکر سوخت 4', type: TankType.fuel, capacity: 5000, currentLevel: 50.0, location: 'پمپ خانه', updatedBy: userRoot!.id, isActive: true },
     ],
   })
 
@@ -143,7 +132,7 @@ async function main() {
   const tasks = await prisma.task.createMany({
     data: [
       {
-        title: 'بررسی سطح مخزن سوخت اصلی',
+        title: 'بررسی سطح تانکر سوخت 1',
         description: 'بررسی روزانه سطح مخزن و ثبت در سیستم',
         assignedTo: userOperator!.id,
         assignedBy: userManager!.id,
@@ -228,14 +217,14 @@ async function main() {
   console.log('🗓️ Created weekly tasks')
 
   // ایجاد هشدارها
-  const tankFuel = await prisma.tank.findFirst({ where: { name: 'مخزن سوخت یدکی' } })
+  const tankFuel = await prisma.tank.findFirst({ where: { name: 'تانکر سوخت 2' } })
   const generatorEmergency = await prisma.generator.findFirst({ where: { name: 'ژنراتور اضطراری' } })
 
   const alerts = await prisma.alert.createMany({
     data: [
       {
         type: AlertType.low_fuel,
-        message: 'سطح مخزن سوخت یدکی به زیر ۵۰٪ رسیده است',
+        message: 'سطح تانکر سوخت 2 به زیر ۵۰٪ رسیده است',
         severity: Severity.medium,
         tankId: tankFuel!.id,
         acknowledged: false,
@@ -262,9 +251,8 @@ async function main() {
 
   console.log('🚨 Created alerts')
 
-  // ایجاد داده‌های تاریخی (سری زمانی مبتنی بر الگوی مصرف قبض‌ها)
-  const tankMain = await prisma.tank.findFirst({ where: { name: 'مخزن سوخت اصلی' } })
-  const waterMain = await prisma.tank.findFirst({ where: { name: 'مخزن آب اصلی' } })
+  // ایجاد داده‌های تاریخی برای ۶۰ روز گذشته (برای تمامی مخازن و ژنراتورها)
+  const sampleTank = await prisma.tank.findFirst({ where: { name: 'تانکر سوخت 1' } })
   const generatorMain = await prisma.generator.findFirst({ where: { name: 'ژنراتور اصلی' } })
 
   // توابع کمکی برای تولید سری زمانی: سطح مخزن به صورت روزانه کاهش می‌یابد و هر چند روز یکبار شارژ/پر می‌شود
@@ -336,44 +324,36 @@ async function main() {
     return data
   }
 
-  const DAYS = 180 // ۶ ماه گذشته برای داشتن روند معنادار
+  const DAYS = 60 // ۲ ماه گذشته مطابق درخواست
 
-  const fuelSeries = tankMain
-    ? generateTankSeries({
-        tankId: tankMain.id,
-        days: DAYS,
-        startLevel: 95,
-        dailyConsumptionPctRange: [0.4, 1.2], // سوخت روزانه مصرف می‌شود
-        refillEveryDays: 14,
-        refillToPct: 85,
-      })
-    : []
+  const allTanks = await prisma.tank.findMany()
+  const allGenerators = await prisma.generator.findMany()
 
-  const waterSeries = waterMain
-    ? generateTankSeries({
-        tankId: waterMain.id,
-        days: DAYS,
-        startLevel: 98,
-        dailyConsumptionPctRange: [0.6, 1.6], // آب با شیب بیشتری مصرف می‌شود
-        refillEveryDays: 7,
-        refillToPct: 90,
-      })
-    : []
+  const tankHistorical = allTanks.flatMap((t) =>
+    generateTankSeries({
+      tankId: t.id,
+      days: DAYS,
+      startLevel: Math.min(100, Math.max(0, t.currentLevel)),
+      dailyConsumptionPctRange: t.type === TankType.fuel ? [0.4, 1.2] : [0.6, 1.6],
+      refillEveryDays: t.type === TankType.fuel ? 14 : 7,
+      refillToPct: t.type === TankType.fuel ? 85 : 90,
+    })
+  )
 
-  const generatorSeries = generatorMain
-    ? generateGeneratorSeries({
-        generatorId: generatorMain.id,
-        days: DAYS,
-        baseLoadPct: 62, // بار پایه معادل مصرف معمول برق
-        dailyNoisePct: 12, // نوسان روزانه
-      })
-    : []
+  const generatorHistorical = allGenerators.flatMap((g) =>
+    generateGeneratorSeries({
+      generatorId: g.id,
+      days: DAYS,
+      baseLoadPct: 62,
+      dailyNoisePct: 12,
+    })
+  )
 
   await prisma.historicalData.createMany({
-    data: [...fuelSeries, ...waterSeries, ...generatorSeries],
+    data: [...tankHistorical, ...generatorHistorical],
   })
 
-  console.log('📊 Created historical data (6 months synthetic series)')
+  console.log('📊 Created historical data (60 days synthetic series for all entities)')
 
   // ایجاد لاگ فعالیت
   const activityLogs = await prisma.activityLog.createMany({
@@ -394,12 +374,71 @@ async function main() {
         type: 'tank_update',
         description: 'سطح مخزن به روز شد',
         userId: userOperator!.id,
-        metadata: { tankId: tankMain!.id, level: 85.5 },
+        metadata: { tankId: sampleTank!.id, level: 75.0 },
       },
     ],
   })
 
   console.log('📝 Created activity logs')
+
+  // ========== Inventory seed ==========
+  const catSpare = await prisma.inventoryCategory.create({
+    data: { name: 'قطعات یدکی', type: 'spare' }
+  })
+  const catTool = await prisma.inventoryCategory.create({
+    data: { name: 'ابزارآلات', type: 'tool' }
+  })
+
+  const itemBearing = await prisma.inventoryItem.create({
+    data: {
+      sku: 'BRG-6205',
+      name: 'بلبرینگ 6205',
+      categoryId: catSpare.id,
+      unit: 'عدد',
+      minStock: 5,
+      reorderPoint: 10,
+      serializable: false,
+      isActive: true,
+    }
+  })
+  const itemWrench = await prisma.inventoryItem.create({
+    data: {
+      sku: 'WR-10MM',
+      name: 'آچار تخت 10mm',
+      categoryId: catTool.id,
+      unit: 'عدد',
+      isActive: true,
+    }
+  })
+
+  const whCentral = await prisma.warehouse.create({
+    data: { name: 'انبار مرکزی', code: 'WH-01', address: 'سایت صنعتی فناپ' }
+  })
+  const locA1 = await prisma.location.create({
+    data: { warehouseId: whCentral.id, name: 'ردیف A - قفسه 1', code: 'A1' }
+  })
+
+  const supLocal = await prisma.supplier.create({
+    data: { name: 'تامین‌کننده محلی', code: 'SUP-LOCAL', phone: '02112345678' }
+  })
+
+  await prisma.stockTransaction.create({
+    data: {
+      type: 'receipt',
+      itemId: itemBearing.id,
+      supplierId: supLocal.id,
+      quantity: 50,
+      unit: 'عدد',
+      toLocationId: locA1.id,
+      requestedBy: userManager!.id,
+      approvedBy: userRoot!.id,
+      postedBy: userRoot!.id,
+      status: 'posted',
+      note: 'ورود اولیه موجودی',
+    }
+  })
+
+  console.log('📦 Seeded inventory base data')
   console.log('🎉 Seed completed successfully!')
 }
 

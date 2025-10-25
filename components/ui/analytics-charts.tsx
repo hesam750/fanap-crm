@@ -196,7 +196,7 @@ export function AnalyticsCharts({ tanks, generators, alerts }: AnalyticsChartsPr
       )}
 
       {/* Generator Status */}
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle>وضعیت ژنراتورها</CardTitle>
         </CardHeader>
@@ -211,7 +211,7 @@ export function AnalyticsCharts({ tanks, generators, alerts }: AnalyticsChartsPr
             </BarChart>
           </ChartContainer>
         </CardContent>
-      </Card>
+      </Card> */}
     </div>
   )
 }

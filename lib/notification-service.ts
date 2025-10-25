@@ -26,6 +26,12 @@ export class NotificationService {
     }
 
     try {
+      // در حالت توسعه از ثبت سرویس0ورکر صرف0نظر می0کنیم تا کش0های قدیمی ایجاد نشوند
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(" Skip service worker registration in development")
+        this.registration = null
+        return true
+      }
       // Register service worker
       this.registration = await navigator.serviceWorker.register("/sw.js")
       console.log(" Service worker registered:", this.registration)

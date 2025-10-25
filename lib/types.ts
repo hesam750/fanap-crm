@@ -277,6 +277,115 @@ export interface ActivityLog {
   metadata?: Record<string, any> | null
   createdAt: Date
 }
-
-// Convenience role type for RBAC mapping
 export type Role = User["role"]
+
+// =========================
+// Inventory Management Types
+// =========================
+export type InventoryCategoryType = "spare" | "tool" | "consumable" | "other"
+
+export interface InventoryCategory {
+  id: string
+  name: string
+  type: InventoryCategoryType
+  parentId?: string | null
+  createdAt: Date | string
+  updatedAt: Date | string
+}
+
+export interface InventoryItem {
+  id: string
+  sku: string
+  name: string
+  description?: string | null
+  categoryId: string
+  unit: string // مثل: "عدد", "کیلوگرم", "لیتر", "متر"
+  minStock?: number | null
+  reorderPoint?: number | null
+  serializable?: boolean
+  isActive: boolean
+  createdAt: Date | string
+  updatedAt: Date | string
+}
+
+export interface Warehouse {
+  id: string
+  name: string
+  code?: string | null
+  address?: string | null
+  createdAt: Date | string
+  updatedAt: Date | string
+}
+
+export interface Location {
+  id: string
+  warehouseId: string
+  name: string
+  code?: string | null
+  createdAt: Date | string
+  updatedAt: Date | string
+}
+
+export interface Supplier {
+  id: string
+  name: string
+  code?: string | null
+  contactPerson?: string | null
+  phone?: string | null
+  email?: string | null
+  address?: string | null
+  createdAt: Date | string
+  updatedAt: Date | string
+}
+
+export type InventoryTransactionType =
+  | "receipt" // ورودی
+  | "issue"   // خروجی
+  | "return"  // مرجوعی
+  | "transfer" // انتقال بین مکان‌ها
+  | "adjustment" // اصلاح موجودی
+
+export type InventoryTransactionStatus =
+  | "requested"
+  | "approved"
+  | "posted"
+  | "rejected"
+  | "void"
+
+export interface StockTransaction {
+  id: string
+  type: InventoryTransactionType
+  itemId: string
+  lotNumber?: string | null
+  supplierId?: string | null
+  quantity: number
+  unit: string
+  fromLocationId?: string | null
+  toLocationId?: string | null
+  requestedBy: string
+  approvedBy?: string | null
+  postedBy?: string | null
+  status: InventoryTransactionStatus
+  referenceType?: string | null // مثلا: "task", "workOrder"
+  referenceId?: string | null
+  note?: string | null
+  createdAt: Date | string
+  updatedAt: Date | string
+}
+
+export interface StockLevel {
+  itemId: string
+  locationId: string
+  quantity: number
+  unit: string
+  updatedAt: Date | string
+}
+
+export interface Document {
+  id: string
+  name: string
+  url: string
+  size: number
+  contentType?: string | null
+  uploadedAt: Date | string
+}

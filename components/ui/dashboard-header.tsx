@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Bell, LogOut, Settings, Moon, Sun, User, Download } from "lucide-react"
+import { Bell, LogOut, Settings, Moon, Sun, User, Download, Menu } from "lucide-react"
 import type { User as UserType, Alert, Task } from "@/lib/types"
 import { AuthService } from "@/lib/auth"
 import { useTheme } from "next-themes"
@@ -15,6 +15,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { alarmManager } from "@/lib/alarm-manager"
+import Link from "next/link"
+import { DrawerTrigger } from "@/components/ui/drawer"
 
 interface DashboardHeaderProps {
   user: UserType
@@ -26,9 +28,10 @@ interface DashboardHeaderProps {
   tasks: Task[]
   selectedAlertIds: string[]
   alarmScope?: "all" | "tasks" | "selected-alerts"
+  showMobileMenuTrigger?: boolean
 }
 
-export function DashboardHeader({ user, alertCount, onLogout, alerts, tasks, selectedAlertIds, alarmScope: alarmScopeProp = "all" }: DashboardHeaderProps) {
+export function DashboardHeader({ user, alertCount, onLogout, alerts, tasks, selectedAlertIds, alarmScope: alarmScopeProp = "all", showMobileMenuTrigger = false }: DashboardHeaderProps) {
   const { theme, setTheme } = useTheme()
   const [currentUser, setCurrentUser] = useState(user)
   // وضعیت تنظیمات آلارم برای مدال هدر
@@ -141,21 +144,43 @@ export function DashboardHeader({ user, alertCount, onLogout, alerts, tasks, sel
     }
   }
 
+  // نمایش امن نام کاربر حتی اگر نوع اشتباه باشد
+  const displayName = typeof currentUser?.name === 'string' ? currentUser.name : String(currentUser?.name ?? '')
+
   return (
-    <header dir="rtl" className="bg-blur border-b border-border px-6 py-4">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+    <header dir="rtl" className="bg-blur border-b border-border px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
+      <div className="flex items-center justify-between flex-wrap gap-3 sm:gap-4">
         {/* Left section with title and role */}
         <div className="flex items-center gap-4 flex-1">
+          {/* Mobile hamburger moved to the right section to avoid overlap */}
           <h1 className="text-2xl font-bold">سیستم مدیریت مخازن</h1>
-          <Badge variant="secondary">{getRoleLabel(currentUser.role)}</Badge>
+          <Badge variant="secondary">{AuthService.getInstance().getRoleDisplayName(currentUser.role)}</Badge>
+          {AuthService.getInstance().canAccessTab("inventory") && (
+            <Link href="/inventory">
+              <Button variant="outline" size="sm">انبار</Button>
+            </Link>
+          )}
+          {/* {AuthService.getInstance().canAccessTab("reports") && (
+            <Link href="/reports" className="hidden sm:block">
+              <Button variant="outline" size="sm">گزارشات</Button>
+            </Link>
+          )} */}
         </div>
 
         {/* Right section with user name, notifications, settings, theme switch, and logout */}
         <div className="flex items-center gap-4 flex-shrink-0">
-          <div className="text-sm text-muted-foreground hidden sm:block">خوش آمدید، {currentUser.name}</div>
+          {/* Mobile hamburger moved here to avoid overlapping the title */}
+          {showMobileMenuTrigger && (
+            <DrawerTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:hidden" aria-label="باز کردن منو">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </DrawerTrigger>
+          )}
+          <div className="text-sm text-muted-foreground hidden sm:block">خوش آمدید، {displayName}</div>
           <Avatar className="size-8">
-            <AvatarImage src={currentUser.avatarUrl || "/placeholder-user.jpg"} alt={currentUser.name} />
-            <AvatarFallback>{currentUser.name?.slice(0,1) || "U"}</AvatarFallback>
+            <AvatarImage src={currentUser.avatarUrl || "/placeholder-user.jpg"} alt={displayName} />
+            <AvatarFallback>{typeof displayName === 'string' && displayName ? displayName.slice(0,1) : "U"}</AvatarFallback>
           </Avatar>
 
           {/* Alarm Settings (root-only) */}
@@ -188,7 +213,7 @@ export function DashboardHeader({ user, alertCount, onLogout, alerts, tasks, sel
                   </div>
 
                   {/* دامنه آلارم */}
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center justify بین gap-3">
                     <Label>دامنه</Label>
                     <Select
                       value={alarmScope}
@@ -239,132 +264,44 @@ export function DashboardHeader({ user, alertCount, onLogout, alerts, tasks, sel
                       سکوت ۱۰ دقیقه‌ای
                     </Button>
                   </div>
-
-                  {/* نکته مرورگر */}
-                  <div className="text-xs text-muted-foreground">
-                    نکته: به‌دلیل سیاست مرورگرها، برای پخش خودکار نیاز به یک تعامل کاربر است.
-                  </div>
-
-                  {/* دلایل فعلی (زنده) */}
-                  <div className="mt-4 space-y-2">
-                    <div className="font-medium">دلایل فعلی پخش صدا:</div>
-                    {alarmEnabled && !alarmMuted ? (
-                      <div className="space-y-2">
-                        {activeAlertsForAlarm.length > 0 && (
-                          <div>
-                            <div className="text-sm text-muted-foreground">هشدارها ({activeAlertsForAlarm.length}):</div>
-                            <ul className="list-disc pr-4">
-                              {activeAlertsForAlarm.slice(0, 5).map((a) => (
-                                <li key={a.id}>
-                                  {a.type === "low_fuel" ? "کاهش سوخت" : a.type === "low_water" ? "کاهش آب" : a.type === "maintenance" ? "تعمیرات" : "هشدار"}
-                                  {a.tankId ? ` • مخزن` : a.generatorId ? ` • ژنراتور` : ""}
-                                  {a.message ? ` — ${a.message}` : ""}
-                                </li>
-                              ))}
-                              {activeAlertsForAlarm.length > 5 && (
-                                <li className="text-muted-foreground">{activeAlertsForAlarm.length - 5} مورد دیگر…</li>
-                              )}
-                            </ul>
-                          </div>
-                        )}
-                        {activeTasksForAlarm.length > 0 && (
-                          <div>
-                            <div className="text-sm text-muted-foreground">تسک‌ها ({activeTasksForAlarm.length}):</div>
-                            <ul className="list-disc pr-4">
-                              {activeTasksForAlarm.slice(0, 5).map((t) => (
-                                <li key={t.id}>{t.title} — {t.priority}</li>
-                              ))}
-                              {activeTasksForAlarm.length > 5 && (
-                                <li className="text-muted-foreground">{activeTasksForAlarm.length - 5} مورد دیگر…</li>
-                              )}
-                            </ul>
-                          </div>
-                        )}
-                        {activeAlertsForAlarm.length === 0 && activeTasksForAlarm.length === 0 && (
-                          <div className="text-muted-foreground">در حال حاضر مورد فعالی وجود ندارد.</div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-muted-foreground">{alarmMuted ? "در سکوت موقت هستید." : "آلارم خاموش است."}</div>
-                    )}
-                  </div>
                 </div>
               </DialogContent>
             </Dialog>
           )}
 
-          {/* Install App button always visible; prompt if available, otherwise show instructions */}
-          {!isStandalone && !installed && (
-            <Dialog open={installDialogOpen && !canInstall} onOpenChange={setInstallDialogOpen}>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={async () => {
-                  try {
-                    if (canInstall && installPromptEvent) {
-                      await installPromptEvent.prompt()
-                      const choice = await installPromptEvent.userChoice
-                      if (choice && choice.outcome === 'accepted') {
-                        setCanInstall(false)
-                      }
-                    } else {
-                      setInstallDialogOpen(true)
-                    }
-                  } catch (err) {
-                    console.log('install error', err)
-                  }
-                }}
-              >
-                نصب اپلیکیشن
-              </Button>
-              {!canInstall && (
-                <DialogContent className="max-w-md" dir="rtl">
-                  <DialogHeader>
-                    <DialogTitle>نصب اپلیکیشن</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-3 text-sm">
-                    <div>
-                      <div className="font-medium">اندروید (Chrome)</div>
-                      <div className="text-muted-foreground">منوی مرورگر → Add to Home screen</div>
-                    </div>
-                    <div>
-                      <div className="font-medium">iOS (Safari)</div>
-                      <div className="text-muted-foreground">دکمه Share → Add to Home Screen</div>
-                    </div>
-                    <div>
-                      <div className="font-medium">دسکتاپ (Chrome/Edge)</div>
-                      <div className="text-muted-foreground">آیکون نصب کنار نوار آدرس یا منو → Install App</div>
-                    </div>
-                    <div className="text-xs text-muted-foreground">اگر اینجا دکمه نصب مستقیم ندارید، مرورگر شما از رویداد نصب خودکار پشتیبانی نمی‌کند؛ از روش‌های بالا نصب را انجام دهید.</div>
-                  </div>
-                </DialogContent>
-              )}
-            </Dialog>
-          )}
-
-          {/* Theme Toggle Button */}
-          <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+          {/* Theme switch */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            title={theme === "dark" ? "روشن" : "تاریک"}
+          >
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
 
-          {/* Profile Management Dialog */}
+          {/* Profile management */}
           <Dialog>
             <DialogTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" title="پروفایل">
                 <User className="h-4 w-4" />
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl w-[calc(100vw-1rem)] sm:w-auto h-[100dvh] sm:h-auto rounded-none sm:rounded-lg p-4 sm:p-6 overflow-y-auto top-0 left-0 translate-x-0 translate-y-0 sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2" dir="rtl">
+            <DialogContent dir="rtl" className="max-w-xl">
               <DialogHeader>
-                <DialogTitle>پروفایل کاربری</DialogTitle>
+                <DialogTitle>تنظیمات کاربری</DialogTitle>
               </DialogHeader>
               <ProfileManagement user={currentUser} onUserUpdate={handleUserUpdate} />
             </DialogContent>
           </Dialog>
 
-          {/* Logout Icon */}
-          <Button variant="ghost" size="icon" onClick={handleLogout}>
-            <LogOut className="h-4 w-4" />
+          {/* Export data */}
+          <Button variant="ghost" size="icon" title="دریافت خروجی">
+            <Download className="h-4 w-4" />
+          </Button>
+
+          {/* Logout */}
+          <Button variant="destructive" size="sm" onClick={handleLogout}>
+            <LogOut className="h-4 w-4 ml-2" /> خروج
           </Button>
         </div>
       </div>
