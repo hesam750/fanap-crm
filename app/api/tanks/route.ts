@@ -26,10 +26,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-
-  const hasPermission = user.permissions?.includes("*") 
-    || user.permissions?.includes("add-tanks") 
-    || user.permissions?.includes("add_tanks")
+  const normalize = (p: string) => (p || '').trim().toLowerCase().replace(/-/g, '_')
+  const userPerms = new Set((user.permissions ?? []).map(normalize))
+  const hasPermission = user.role === 'root' || userPerms.has('*') || userPerms.has('add_tanks')
   if (!hasPermission) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 })
   }

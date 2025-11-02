@@ -94,10 +94,10 @@ export default function SuppliersPage() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="flex items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <CardTitle>مدیریت تامین‌کنندگان</CardTitle>
-          <div className="flex items-center gap-2">
-            <div className="relative w-64">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="جستجو نام/کد/مسئول/ایمیل/تلفن"
@@ -106,48 +106,102 @@ export default function SuppliersPage() {
                 className="pl-8"
               />
             </div>
-            <Button variant="outline" onClick={loadData} disabled={loading}>
-              <RefreshCw className="h-4 w-4 ml-1" /> بروزرسانی
-            </Button>
-            {canCreateSupplier && (
-              <Button onClick={() => setOpenCreateDialog(true)} disabled={loading}>
-                <Plus className="h-4 w-4 ml-1" /> افزودن تامین‌کننده
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={loadData} disabled={loading} className="flex-1 sm:flex-none">
+                <RefreshCw className="h-4 w-4 ml-1" /> بروزرسانی
               </Button>
-            )}
+              {canCreateSupplier && (
+                <Button onClick={() => setOpenCreateDialog(true)} disabled={loading} className="flex-1 sm:flex-none">
+                  <Plus className="h-4 w-4 ml-1" /> افزودن تامین‌کننده
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>تاریخ ایجاد</TableHead>
-                <TableHead>نام</TableHead>
-                <TableHead>کد</TableHead>
-                <TableHead>مسئول تماس</TableHead>
-                <TableHead>تلفن</TableHead>
-                <TableHead>ایمیل</TableHead>
-                <TableHead>آدرس</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map(s => (
-                <TableRow key={s.id}>
-                  <TableCell>{new Date(s.createdAt as any).toLocaleString("fa-IR")}</TableCell>
-                  <TableCell className="font-medium">{s.name}</TableCell>
-                  <TableCell className="font-mono text-xs">{s.code || "-"}</TableCell>
-                  <TableCell>{s.contactPerson || "-"}</TableCell>
-                  <TableCell>{s.phone || "-"}</TableCell>
-                  <TableCell>{s.email || "-"}</TableCell>
-                  <TableCell className="max-w-[300px] truncate" title={s.address || undefined}>{s.address || "-"}</TableCell>
-                </TableRow>
-              ))}
-              {filtered.length === 0 && (
+          {/* Mobile Cards - visible only on small screens */}
+          <div className="sm:hidden space-y-4">
+            {filtered.map(s => (
+              <Card key={s.id} className="p-4">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-start">
+                    <h3 className="font-medium text-lg">{s.name}</h3>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(s.createdAt as any).toLocaleDateString("fa-IR")}
+                    </span>
+                  </div>
+                  {s.code && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">کد:</span>
+                      <span className="text-sm font-mono">{s.code}</span>
+                    </div>
+                  )}
+                  {s.contactPerson && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">مسئول تماس:</span>
+                      <span className="text-sm">{s.contactPerson}</span>
+                    </div>
+                  )}
+                  {s.phone && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">تلفن:</span>
+                      <span className="text-sm">{s.phone}</span>
+                    </div>
+                  )}
+                  {s.email && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">ایمیل:</span>
+                      <span className="text-sm">{s.email}</span>
+                    </div>
+                  )}
+                  {s.address && (
+                    <div className="space-y-1">
+                      <span className="text-sm text-muted-foreground">آدرس:</span>
+                      <p className="text-sm">{s.address}</p>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            ))}
+            {filtered.length === 0 && (
+              <div className="text-center text-muted-foreground py-8">موردی یافت نشد</div>
+            )}
+          </div>
+
+          {/* Desktop Table - hidden on small screens */}
+          <div className="hidden sm:block overflow-x-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">موردی یافت نشد</TableCell>
+                  <TableHead>تاریخ ایجاد</TableHead>
+                  <TableHead>نام</TableHead>
+                  <TableHead>کد</TableHead>
+                  <TableHead>مسئول تماس</TableHead>
+                  <TableHead>تلفن</TableHead>
+                  <TableHead>ایمیل</TableHead>
+                  <TableHead>آدرس</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filtered.map(s => (
+                  <TableRow key={s.id}>
+                    <TableCell>{new Date(s.createdAt as any).toLocaleString("fa-IR")}</TableCell>
+                    <TableCell className="font-medium">{s.name}</TableCell>
+                    <TableCell className="font-mono text-xs">{s.code || "-"}</TableCell>
+                    <TableCell>{s.contactPerson || "-"}</TableCell>
+                    <TableCell>{s.phone || "-"}</TableCell>
+                    <TableCell>{s.email || "-"}</TableCell>
+                    <TableCell className="max-w-[300px] truncate" title={s.address || undefined}>{s.address || "-"}</TableCell>
+                  </TableRow>
+                ))}
+                {filtered.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center text-muted-foreground">موردی یافت نشد</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 

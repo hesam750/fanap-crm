@@ -89,11 +89,11 @@ export default function InventoryWorkflowsPage() {
   return (
     <div className="space-y-6">
             <Card>
-              <CardHeader className="flex items-center justify-between">
+              <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
                 <CardTitle>گردش کار انبار</CardTitle>
-                <div className="flex items-center gap-2">
+                <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <Select value={statusFilter || ""} onValueChange={(val) => setStatusFilter(val === "__ALL__" ? "" : (val as InventoryTransactionStatus))}>
-                    <SelectTrigger className="w-44">
+                    <SelectTrigger className="w-full sm:w-44">
                       <SelectValue placeholder="وضعیت" />
                     </SelectTrigger>
                     <SelectContent>
@@ -103,15 +103,65 @@ export default function InventoryWorkflowsPage() {
                       <SelectItem value="posted">ثبت شده</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Button variant="outline" onClick={loadData} disabled={loading}>
+                  <Button variant="outline" onClick={loadData} disabled={loading} className="w-full sm:w-auto">
                     <RefreshCw className="h-4 w-4 ml-1" />
                     بروزرسانی
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
+                {/* موبایل: نمایش کارت‌ها */}
+                <div className="sm:hidden space-y-3">
+                  {displayed.map(t => {
+                    const allowed = (allowedTransitions[t.status] || [])
+                    const actions = allowed.map(s => statusToActionMap[s]).filter(Boolean) as WorkflowAction[]
+                    return (
+                      <Card key={t.id}>
+                        <CardContent className="pt-4 space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">تاریخ</span>
+                            <span className="text-sm">{new Date(t.createdAt as any).toLocaleString("fa-IR")}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">نوع</span>
+                            <span className="text-sm">{t.type}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">کالا</span>
+                            <span className="text-sm">{itemName(t.itemId)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">مقدار</span>
+                            <span className="text-sm">{t.quantity} {t.unit}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">وضعیت</span>
+                            <span className="text-sm">{t.status}</span>
+                          </div>
+                          <div className="pt-2">
+                            {canManageInventory ? (
+                              <div className="flex flex-wrap items-center gap-2">
+                                {actions.map(a => (
+                                  <Button key={a} size="sm" variant={a === "reject" ? "destructive" : a === "void" ? "outline" : "default"} onClick={() => performAction(t, a)}>
+                                    {actionLabel[a]}
+                                  </Button>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">دسترسی ندارید</span>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )
+                  })}
+                  {displayed.length === 0 && (
+                    <div className="text-center text-muted-foreground text-sm">مورد قابل اقدام یافت نشد</div>
+                  )}
+                </div>
+                {/* دسکتاپ: جدول با اسکرول افقی */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <Table className="min-w-[720px]">
                     <TableHeader>
                       <TableRow>
                         <TableHead>تاریخ</TableHead>

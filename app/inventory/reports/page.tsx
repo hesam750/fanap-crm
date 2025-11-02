@@ -281,18 +281,18 @@ export default function InventoryReportsPage() {
   return (
     <div className="space-y-6">
             <Card>
-              <CardHeader className="flex items-center justify-between">
+              <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
                 <div className="flex items-center gap-2">
                   <BarChart3 className="h-5 w-5" />
                   <CardTitle>گزارشات انبار</CardTitle>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="relative w-64">
+                <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <div className="relative w-full sm:w-64">
                     <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="جستجو نام کالا" value={query} onChange={(e) => setQuery(e.target.value)} className="pl-8" />
+                    <Input placeholder="جستجو نام کالا" value={query} onChange={(e) => setQuery(e.target.value)} className="w-full pl-8" />
                   </div>
                   <Select value={reportPeriod} onValueChange={setReportPeriod}>
-                    <SelectTrigger className="w-40">
+                    <SelectTrigger className="w-full sm:w-40">
                       <SelectValue placeholder="بازه" />
                     </SelectTrigger>
                     <SelectContent>
@@ -303,7 +303,7 @@ export default function InventoryReportsPage() {
                     </SelectContent>
                   </Select>
                   <Select value={warehouseId} onValueChange={(val) => setWarehouseId(val === "__ALL__" ? "" : val)}>
-                    <SelectTrigger className="w-52">
+                    <SelectTrigger className="w-full sm:w-52">
                       <SelectValue placeholder="انبار" />
                     </SelectTrigger>
                     <SelectContent>
@@ -314,7 +314,7 @@ export default function InventoryReportsPage() {
                     </SelectContent>
                   </Select>
                   <Select value={categoryId} onValueChange={(val) => setCategoryId(val === "__ALL__" ? "" : val)}>
-                    <SelectTrigger className="w-52">
+                    <SelectTrigger className="w-full sm:w-52">
                       <SelectValue placeholder="دسته‌بندی" />
                     </SelectTrigger>
                     <SelectContent>
@@ -324,13 +324,13 @@ export default function InventoryReportsPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button variant="outline" onClick={loadData} disabled={loading}>
+                  <Button variant="outline" onClick={loadData} disabled={loading} className="w-full sm:w-auto">
                     <RefreshCw className="h-4 w-4 ml-1" /> بروزرسانی
                   </Button>
-                  <Button onClick={exportJSON}>
+                  <Button onClick={exportJSON} className="w-full sm:w-auto">
                     <Download className="h-4 w-4 ml-1" /> خروجی JSON
                   </Button>
-                  <Button onClick={exportCSV} variant="secondary">
+                  <Button onClick={exportCSV} variant="secondary" className="w-full sm:w-auto">
                     <Download className="h-4 w-4 ml-1" /> خروجی CSV
                   </Button>
                 </div>
@@ -348,171 +348,349 @@ export default function InventoryReportsPage() {
                 {/* Stock by Warehouse */}
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold mb-2">موجودی بر اساس انبار</h3>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>انبار</TableHead>
-                        <TableHead className="text-right">مقدار کل</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {stockByWarehouse.map(r => (
-                        <TableRow key={r.wid}>
-                          <TableCell>{nameForWarehouse(r.wid)}</TableCell>
-                          <TableCell className="text-right">{(Number(r.qty) || 0).toLocaleString('fa-IR')}</TableCell>
-                        </TableRow>
-                      ))}
-                      {stockByWarehouse.length === 0 && (
+
+                  {/* موبایل: کارت‌ها */}
+                  <div className="sm:hidden space-y-3">
+                    {stockByWarehouse.map(r => (
+                      <Card key={r.wid}>
+                        <CardContent className="pt-4 space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">انبار</span>
+                            <span className="text-sm">{nameForWarehouse(r.wid)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">مقدار کل</span>
+                            <span className="text-sm">{(Number(r.qty) || 0).toLocaleString('fa-IR')}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {stockByWarehouse.length === 0 && (
+                      <div className="text-center text-muted-foreground text-sm">داده‌ای نیست</div>
+                    )}
+                  </div>
+
+                  {/* دسکتاپ: جدول با اسکرول */}
+                  <div className="hidden sm:block overflow-x-auto">
+                    <Table className="min-w-[480px]">
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={2} className="text-center text-muted-foreground">داده‌ای نیست</TableCell>
+                          <TableHead>انبار</TableHead>
+                          <TableHead className="text-right">مقدار کل</TableHead>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {stockByWarehouse.map(r => (
+                          <TableRow key={r.wid}>
+                            <TableCell>{nameForWarehouse(r.wid)}</TableCell>
+                            <TableCell className="text-right">{(Number(r.qty) || 0).toLocaleString('fa-IR')}</TableCell>
+                          </TableRow>
+                        ))}
+                        {stockByWarehouse.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={2} className="text-center text-muted-foreground">داده‌ای نیست</TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
 
                 {/* Stock by Category */}
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold mb-2">موجودی بر اساس دسته‌بندی</h3>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>دسته‌بندی</TableHead>
-                        <TableHead className="text-right">مقدار کل</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {stockByCategory.map(r => (
-                        <TableRow key={r.cid}>
-                          <TableCell>{nameForCategory(r.cid)}</TableCell>
-                          <TableCell className="text-right">{(Number(r.qty) || 0).toLocaleString('fa-IR')}</TableCell>
-                        </TableRow>
-                      ))}
-                      {stockByCategory.length === 0 && (
+
+                  {/* موبایل: کارت‌ها */}
+                  <div className="sm:hidden space-y-3">
+                    {stockByCategory.map(r => (
+                      <Card key={r.cid}>
+                        <CardContent className="pt-4 space-y-2">
+                          <div className="flex justify_between">
+                            <span className="text-xs text-muted-foreground">دسته‌بندی</span>
+                            <span className="text-sm">{nameForCategory(r.cid)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">مقدار کل</span>
+                            <span className="text-sm">{(Number(r.qty) || 0).toLocaleString('fa-IR')}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {stockByCategory.length === 0 && (
+                      <div className="text-center text-muted-foreground text-sm">داده‌ای نیست</div>
+                    )}
+                  </div>
+
+                  {/* دسکتاپ: جدول با اسکرول */}
+                  <div className="hidden sm:block overflow-x-auto">
+                    <Table className="min-w-[480px]">
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={2} className="text-center text-muted-foreground">داده‌ای نیست</TableCell>
+                          <TableHead>دسته‌بندی</TableHead>
+                          <TableHead className="text-right">مقدار کل</TableHead>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {stockByCategory.map(r => (
+                          <TableRow key={r.cid}>
+                            <TableCell>{nameForCategory(r.cid)}</TableCell>
+                            <TableCell className="text-right">{(Number(r.qty) || 0).toLocaleString('fa-IR')}</TableCell>
+                          </TableRow>
+                        ))}
+                        {stockByCategory.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={2} className="text-center text-muted-foreground">داده‌ای نیست</TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
 
                 {/* Transactions Summary */}
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold mb-2">خلاصه تراکنش‌ها ({filteredTransactions.length})</h3>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>نوع</TableHead>
-                        <TableHead>تعداد</TableHead>
-                        <TableHead className="text-right">مجموع مقدار</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {trxSummaryByType.map(r => (
-                        <TableRow key={r.type}>
-                          <TableCell>{r.type}</TableCell>
-                          <TableCell>{r.count}</TableCell>
-                          <TableCell className="text-right">{(Number(r.quantity) || 0).toLocaleString('fa-IR')}</TableCell>
-                        </TableRow>
-                      ))}
-                      {trxSummaryByType.length === 0 && (
+
+                  {/* موبایل: کارت‌ها */}
+                  <div className="sm:hidden space-y-3">
+                    {trxSummaryByType.map(r => (
+                      <Card key={r.type}>
+                        <CardContent className="pt-4 space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">نوع</span>
+                            <span className="text-sm">{r.type}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">تعداد</span>
+                            <span className="text-sm">{r.count}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">مجموع مقدار</span>
+                            <span className="text-sm">{(Number(r.quantity) || 0).toLocaleString('fa-IR')}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {trxSummaryByType.length === 0 && (
+                      <div className="text-center text-muted-foreground text-sm">داده‌ای نیست</div>
+                    )}
+                  </div>
+
+                  {/* دسکتاپ: جدول با اسکرول */}
+                  <div className="hidden sm:block overflow-x-auto">
+                    <Table className="min-w-[560px]">
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={3} className="text-center text-muted-foreground">داده‌ای نیست</TableCell>
+                          <TableHead>نوع</TableHead>
+                          <TableHead>تعداد</TableHead>
+                          <TableHead className="text-right">مجموع مقدار</TableHead>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {trxSummaryByType.map(r => (
+                          <TableRow key={r.type}>
+                            <TableCell>{r.type}</TableCell>
+                            <TableCell>{r.count}</TableCell>
+                            <TableCell className="text-right">{(Number(r.quantity) || 0).toLocaleString('fa-IR')}</TableCell>
+                          </TableRow>
+                        ))}
+                        {trxSummaryByType.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={3} className="text-center text-muted-foreground">داده‌ای نیست</TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
 
                 {/* Transactions by Status */}
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold mb-2">توزیع وضعیت تراکنش‌ها</h3>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>وضعیت</TableHead>
-                        <TableHead className="text-right">تعداد</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {trxSummaryByStatus.map(r => (
-                        <TableRow key={r.status}>
-                          <TableCell>{r.status}</TableCell>
-                          <TableCell className="text-right">{r.count}</TableCell>
-                        </TableRow>
-                      ))}
-                      {trxSummaryByStatus.length === 0 && (
+
+                  {/* موبایل: کارت‌ها */}
+                  <div className="sm:hidden space-y-3">
+                    {trxSummaryByStatus.map(r => (
+                      <Card key={r.status}>
+                        <CardContent className="pt-4 space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">وضعیت</span>
+                            <span className="text-sm">{r.status}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">تعداد</span>
+                            <span className="text-sm">{r.count}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {trxSummaryByStatus.length === 0 && (
+                      <div className="text-center text-muted-foreground text-sm">داده‌ای نیست</div>
+                    )}
+                  </div>
+
+                  {/* دسکتاپ: جدول با اسکرول */}
+                  <div className="hidden sm:block overflow-x-auto">
+                    <Table className="min-w-[400px]">
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={2} className="text-center text-muted-foreground">داده‌ای نیست</TableCell>
+                          <TableHead>وضعیت</TableHead>
+                          <TableHead className="text-right">تعداد</TableHead>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {trxSummaryByStatus.map(r => (
+                          <TableRow key={r.status}>
+                            <TableCell>{r.status}</TableCell>
+                            <TableCell className="text-right">{r.count}</TableCell>
+                          </TableRow>
+                        ))}
+                        {trxSummaryByStatus.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={2} className="text-center text-muted-foreground">داده‌ای نیست</TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
 
                 {/* Low Stock Items */}
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold mb-2">اقلام کم‌موجودی ({lowStockItems.length})</h3>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>کالا</TableHead>
-                        <TableHead>موجودی فعلی</TableHead>
-                        <TableHead className="text-right">آستانه هشدار</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {lowStockItems.map(({ item, current, threshold }) => (
-                        <TableRow key={item.id}>
-                          <TableCell>{item.name}</TableCell>
-                          <TableCell>{(Number(current) || 0).toLocaleString('fa-IR')}</TableCell>
-                          <TableCell className="text-right">{(Number(threshold) || 0).toLocaleString('fa-IR')}</TableCell>
-                        </TableRow>
-                      ))}
-                      {lowStockItems.length === 0 && (
+
+                  {/* موبایل: کارت‌ها */}
+                  <div className="sm:hidden space-y-3">
+                    {lowStockItems.map(({ item, current, threshold }) => (
+                      <Card key={item.id}>
+                        <CardContent className="pt-4 space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">کالا</span>
+                            <span className="text-sm">{item.name}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">موجودی فعلی</span>
+                            <span className="text-sm">{(Number(current) || 0).toLocaleString('fa-IR')}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">آستانه هشدار</span>
+                            <span className="text-sm">{(Number(threshold) || 0).toLocaleString('fa-IR')}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {lowStockItems.length === 0 && (
+                      <div className="text-center text-muted-foreground text-sm">اقلام کم‌موجودی نداریم</div>
+                    )}
+                  </div>
+
+                  {/* دسکتاپ: جدول با اسکرول */}
+                  <div className="hidden sm:block overflow-x-auto">
+                    <Table className="min-w-[560px]">
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={3} className="text-center text-muted-foreground">اقلام کم‌موجودی نداریم</TableCell>
+                          <TableHead>کالا</TableHead>
+                          <TableHead>موجودی فعلی</TableHead>
+                          <TableHead className="text-right">آستانه هشدار</TableHead>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {lowStockItems.map(({ item, current, threshold }) => (
+                          <TableRow key={item.id}>
+                            <TableCell>{item.name}</TableCell>
+                            <TableCell>{(Number(current) || 0).toLocaleString('fa-IR')}</TableCell>
+                            <TableCell className="text-right">{(Number(threshold) || 0).toLocaleString('fa-IR')}</TableCell>
+                          </TableRow>
+                        ))}
+                        {lowStockItems.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={3} className="text-center text-muted-foreground">اقلام کم‌موجودی نداریم</TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
 
                 {/* Recent Transactions list */}
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold mb-2">آخرین تراکنش‌ها</h3>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>تاریخ</TableHead>
-                        <TableHead>کالا</TableHead>
-                        <TableHead>نوع</TableHead>
-                        <TableHead>از</TableHead>
-                        <TableHead>به</TableHead>
-                        <TableHead className="text-right">مقدار</TableHead>
-                        <TableHead>وضعیت</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredTransactions.slice(0, 20).map(t => (
-                        <TableRow key={t.id}>
-                          <TableCell>{(() => { const d = new Date(t.createdAt as any); return isNaN(d.getTime()) ? 'نامشخص' : d.toLocaleString('fa-IR') })()}</TableCell>
-                          <TableCell>{nameForItem(t.itemId)}</TableCell>
-                          <TableCell>{t.type}</TableCell>
-                          <TableCell>{t.fromLocationId ? nameForWarehouse(locationWarehouseMap.get(t.fromLocationId) || "") + " - " + nameForLocation(t.fromLocationId) : "-"}</TableCell>
-                          <TableCell>{t.toLocationId ? nameForWarehouse(locationWarehouseMap.get(t.toLocationId) || "") + " - " + nameForLocation(t.toLocationId) : "-"}</TableCell>
-                          <TableCell className="text-right">{(Number(t.quantity) || 0).toLocaleString('fa-IR')}</TableCell>
-                          <TableCell>{t.status}</TableCell>
-                        </TableRow>
-                      ))}
-                      {filteredTransactions.length === 0 && (
+
+                  {/* موبایل: کارت‌ها */}
+                  <div className="sm:hidden space-y-3">
+                    {filteredTransactions.slice(0, 20).map(t => (
+                      <Card key={t.id}>
+                        <CardContent className="pt-4 space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">تاریخ</span>
+                            <span className="text-sm">{(() => { const d = new Date(t.createdAt as any); return isNaN(d.getTime()) ? 'نامشخص' : d.toLocaleString('fa-IR') })()}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">کالا</span>
+                            <span className="text-sm">{nameForItem(t.itemId)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">نوع</span>
+                            <span className="text-sm">{t.type}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">از</span>
+                            <span className="text-sm">{t.fromLocationId ? nameForWarehouse(locationWarehouseMap.get(t.fromLocationId) || "") + " - " + nameForLocation(t.fromLocationId) : "-"}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">به</span>
+                            <span className="text-sm">{t.toLocationId ? nameForWarehouse(locationWarehouseMap.get(t.toLocationId) || "") + " - " + nameForLocation(t.toLocationId) : "-"}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">مقدار</span>
+                            <span className="text-sm">{(Number(t.quantity) || 0).toLocaleString('fa-IR')}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-xs text-muted-foreground">وضعیت</span>
+                            <span className="text-sm">{t.status}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {filteredTransactions.length === 0 && (
+                      <div className="text-center text-muted-foreground text-sm">تراکنشی در بازه انتخابی نیست</div>
+                    )}
+                  </div>
+
+                  {/* دسکتاپ: جدول با اسکرول */}
+                  <div className="hidden sm:block overflow-x-auto">
+                    <Table className="min-w-[880px]">
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={7} className="text-center text-muted-foreground">تراکنشی در بازه انتخابی نیست</TableCell>
+                          <TableHead>تاریخ</TableHead>
+                          <TableHead>کالا</TableHead>
+                          <TableHead>نوع</TableHead>
+                          <TableHead>از</TableHead>
+                          <TableHead>به</TableHead>
+                          <TableHead className="text-right">مقدار</TableHead>
+                          <TableHead>وضعیت</TableHead>
                         </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredTransactions.slice(0, 20).map(t => (
+                          <TableRow key={t.id}>
+                            <TableCell>{(() => { const d = new Date(t.createdAt as any); return isNaN(d.getTime()) ? 'نامشخص' : d.toLocaleString('fa-IR') })()}</TableCell>
+                            <TableCell>{nameForItem(t.itemId)}</TableCell>
+                            <TableCell>{t.type}</TableCell>
+                            <TableCell>{t.fromLocationId ? nameForWarehouse(locationWarehouseMap.get(t.fromLocationId) || "") + " - " + nameForLocation(t.fromLocationId) : "-"}</TableCell>
+                            <TableCell>{t.toLocationId ? nameForWarehouse(locationWarehouseMap.get(t.toLocationId) || "") + " - " + nameForLocation(t.toLocationId) : "-"}</TableCell>
+                            <TableCell className="text-right">{(Number(t.quantity) || 0).toLocaleString('fa-IR')}</TableCell>
+                            <TableCell>{t.status}</TableCell>
+                          </TableRow>
+                        ))}
+                        {filteredTransactions.length === 0 && (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center text-muted-foreground">تراکنشی در بازه انتخابی نیست</TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </div>
               </CardContent>
             </Card>

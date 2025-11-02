@@ -3,7 +3,13 @@ import { db } from "@/lib/database"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production"
+function getJwtSecret() {
+  const secret = process.env.JWT_SECRET
+  if (!secret && process.env.NODE_ENV === 'production') {
+    return null
+  }
+  return secret || 'dev-secret'
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,9 +37,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Account is deactivated" }, { status: 401 })
     }
 
+    const secret = getJwtSecret()
+    if (!secret) {
+      return NextResponse.json({ error: "Server misconfigured: missing JWT secret" }, { status: 500 })
+    }
     const token = jwt.sign(
       { userId: userRow.id, role: userRow.role },
-      JWT_SECRET,
+      secret,
       { expiresIn: "24h" }
     )
 
@@ -54,7 +64,8 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 24 * 60 * 60
+      maxAge: 24 * 60 * 60,
+      path: '/',
     })
     
     return response

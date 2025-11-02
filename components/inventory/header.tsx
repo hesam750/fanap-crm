@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
 import { AuthService } from "@/lib/auth"
+import { BrandLogo } from "@/components/ui/brand-logo"
 
 export function Header() {
   const { theme, setTheme } = useTheme()
@@ -46,6 +47,7 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b border-border bg-card px-6">
       <div className="flex flex-1 items-center gap-4">
+        <BrandLogo height={24} />
         <div className="relative w-full max-w-md">
           <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input type="search" placeholder="جستجو در سیستم..." className="w-full pr-10" />

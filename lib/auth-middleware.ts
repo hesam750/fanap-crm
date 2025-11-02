@@ -3,7 +3,13 @@ import { db } from "./database"
 import type { User } from "./types"
 import { NextRequest } from "next/server"
 
-  const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-production"
+function getJwtSecret() {
+  const secret = process.env.JWT_SECRET
+  if (!secret && process.env.NODE_ENV === 'production') {
+    return null
+  }
+  return secret || 'dev-secret'
+}
 
 export async function validateAuth(request: NextRequest): Promise<User | null> {
   // Get token from cookie (same as middleware)
@@ -14,8 +20,11 @@ export async function validateAuth(request: NextRequest): Promise<User | null> {
   }
 
   try {
-
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string }
+    const secret = getJwtSecret()
+    if (!secret) {
+      return null
+    }
+    const decoded = jwt.verify(token, secret) as { userId: string }
 
     const user = await db.getUserById(decoded.userId)
 

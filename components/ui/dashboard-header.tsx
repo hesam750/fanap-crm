@@ -16,6 +16,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { Slider } from "@/components/ui/slider"
 import { alarmManager } from "@/lib/alarm-manager"
 import Link from "next/link"
+import { BrandLogo } from "@/components/ui/brand-logo"
 import { DrawerTrigger } from "@/components/ui/drawer"
 
 interface DashboardHeaderProps {
@@ -152,6 +153,7 @@ export function DashboardHeader({ user, alertCount, onLogout, alerts, tasks, sel
       <div className="flex items-center justify-between flex-wrap gap-3 sm:gap-4">
         {/* Left section with title and role */}
         <div className="flex items-center gap-4 flex-1">
+          <BrandLogo height={28} />
           {/* Mobile hamburger moved to the right section to avoid overlap */}
           <h1 className="text-2xl font-bold">سیستم مدیریت مخازن</h1>
           <Badge variant="secondary">{AuthService.getInstance().getRoleDisplayName(currentUser.role)}</Badge>

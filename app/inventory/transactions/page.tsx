@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useAuth } from "@/hooks/useAuth"
 import { useToast } from "@/components/ui/use-toast"
 import { RefreshCw, Search, Plus } from "lucide-react"
+import { MobileFilterDrawer } from "@/components/inventory/mobile-filter-drawer"
 
 export default function InventoryTransactionsPage() {
   const { currentUser } = useAuth()
@@ -132,13 +133,24 @@ export default function InventoryTransactionsPage() {
     return arr
   }, [transactions, trxType, trxStatus, trxItemId, query, itemsById, warehouseFilterId, locationFilterId, locationWarehouseMap])
 
+  const activeFiltersCount = useMemo(() => {
+    let c = 0
+    if (query.trim()) c++
+    if (trxType) c++
+    if (trxStatus) c++
+    if (trxItemId) c++
+    if (warehouseFilterId) c++
+    if (locationFilterId) c++
+    return c
+  }, [query, trxType, trxStatus, trxItemId, warehouseFilterId, locationFilterId])
+
   return (
     <div className="space-y-6">
             <Card>
-              <CardHeader className="flex items-center justify-between">
+              <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <CardTitle>مدیریت تراکنش‌ها</CardTitle>
-                <div className="flex items-center gap-2">
-                  <div className="relative w-64">
+                <div className="flex flex-col md:flex-row md:items-center gap-2 w-full">
+                  <div className="relative w-full md:w-64">
                     <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="جستجو نام کالا/توضیحات"
@@ -147,78 +159,190 @@ export default function InventoryTransactionsPage() {
                       className="pl-8"
                     />
                   </div>
-                  <Select value={trxType || ""} onValueChange={(val) => setTrxType(val === "__ALL_TYPES__" ? "" : (val as InventoryTransactionType))}>
-                    <SelectTrigger className="w-44">
-                      <SelectValue placeholder="نوع" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__ALL_TYPES__">همه انواع</SelectItem>
-                      <SelectItem value="receipt">ورودی</SelectItem>
-                      <SelectItem value="issue">خروجی</SelectItem>
-                      <SelectItem value="return">مرجوعی</SelectItem>
-                      <SelectItem value="transfer">انتقال</SelectItem>
-                      <SelectItem value="adjustment">اصلاح موجودی</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={trxStatus || ""} onValueChange={(val) => setTrxStatus(val === "__ALL_STATUS__" ? "" : (val as InventoryTransactionStatus))}>
-                    <SelectTrigger className="w-44">
-                      <SelectValue placeholder="وضعیت" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__ALL_STATUS__">همه وضعیت‌ها</SelectItem>
-                      <SelectItem value="requested">درخواست شده</SelectItem>
-                      <SelectItem value="approved">تأیید شده</SelectItem>
-                      <SelectItem value="posted">ثبت شده</SelectItem>
-                      <SelectItem value="rejected">رد شده</SelectItem>
-                      <SelectItem value="void">باطل</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={trxItemId || ""} onValueChange={(val) => setTrxItemId(val === "__ALL_ITEMS__" ? "" : val)}>
-                    <SelectTrigger className="w-56">
-                      <SelectValue placeholder="کالا" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__ALL_ITEMS__">همه کالاها</SelectItem>
-                      {items.map(i => (
-                        <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={warehouseFilterId} onValueChange={(val) => { const v = val === "__ALL_WAREHOUSES__" ? "" : val; setWarehouseFilterId(v); setLocationFilterId("") }}>
-                    <SelectTrigger className="w-52">
-                      <SelectValue placeholder="انبار" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__ALL_WAREHOUSES__">همه انبارها</SelectItem>
-                      {warehouses.map(w => (
-                        <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Select value={locationFilterId} onValueChange={(val) => setLocationFilterId(val === "__ALL_LOCATIONS__" ? "" : val)}>
-                    <SelectTrigger className="w-52">
-                      <SelectValue placeholder="مکان" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__ALL_LOCATIONS__">همه مکان‌ها</SelectItem>
-                      {locationsForWarehouseFilter.map(l => (
-                        <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button variant="outline" onClick={loadData} disabled={loading}>
+                  {/* فیلترها: موبایل در دراور */}
+                  <div className="md:hidden">
+                    <MobileFilterDrawer title="فیلترهای تراکنش" badgeCount={activeFiltersCount} triggerClassName="w-full">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <Select value={trxType || ""} onValueChange={(val) => setTrxType(val === "__ALL_TYPES__" ? "" : (val as InventoryTransactionType))}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="نوع" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__ALL_TYPES__">همه انواع</SelectItem>
+                            <SelectItem value="receipt">ورودی</SelectItem>
+                            <SelectItem value="issue">خروجی</SelectItem>
+                            <SelectItem value="return">مرجوعی</SelectItem>
+                            <SelectItem value="transfer">انتقال</SelectItem>
+                            <SelectItem value="adjustment">اصلاح موجودی</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Select value={trxStatus || ""} onValueChange={(val) => setTrxStatus(val === "__ALL_STATUS__" ? "" : (val as InventoryTransactionStatus))}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="وضعیت" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__ALL_STATUS__">همه وضعیت‌ها</SelectItem>
+                            <SelectItem value="requested">درخواست شده</SelectItem>
+                            <SelectItem value="approved">تأیید شده</SelectItem>
+                            <SelectItem value="posted">ثبت شده</SelectItem>
+                            <SelectItem value="rejected">رد شده</SelectItem>
+                            <SelectItem value="void">باطل</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Select value={trxItemId || ""} onValueChange={(val) => setTrxItemId(val === "__ALL_ITEMS__" ? "" : val)}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="کالا" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__ALL_ITEMS__">همه کالاها</SelectItem>
+                            {items.map(i => (
+                              <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select value={warehouseFilterId} onValueChange={(val) => { const v = val === "__ALL_WAREHOUSES__" ? "" : val; setWarehouseFilterId(v); setLocationFilterId("") }}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="انبار" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__ALL_WAREHOUSES__">همه انبارها</SelectItem>
+                            {warehouses.map(w => (
+                              <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Select value={locationFilterId} onValueChange={(val) => setLocationFilterId(val === "__ALL_LOCATIONS__" ? "" : val)}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="مکان" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__ALL_LOCATIONS__">همه مکان‌ها</SelectItem>
+                            {locationsForWarehouseFilter.map(l => (
+                              <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </MobileFilterDrawer>
+                  </div>
+
+                  {/* فیلترها: دسکتاپ Inline */}
+                  <div className="hidden md:flex md:flex-wrap md:items-center gap-2 w-full">
+                    <Select value={trxType || ""} onValueChange={(val) => setTrxType(val === "__ALL_TYPES__" ? "" : (val as InventoryTransactionType))}>
+                      <SelectTrigger className="w-44">
+                        <SelectValue placeholder="نوع" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__ALL_TYPES__">همه انواع</SelectItem>
+                        <SelectItem value="receipt">ورودی</SelectItem>
+                        <SelectItem value="issue">خروجی</SelectItem>
+                        <SelectItem value="return">مرجوعی</SelectItem>
+                        <SelectItem value="transfer">انتقال</SelectItem>
+                        <SelectItem value="adjustment">اصلاح موجودی</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={trxStatus || ""} onValueChange={(val) => setTrxStatus(val === "__ALL_STATUS__" ? "" : (val as InventoryTransactionStatus))}>
+                      <SelectTrigger className="w-44">
+                        <SelectValue placeholder="وضعیت" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__ALL_STATUS__">همه وضعیت‌ها</SelectItem>
+                        <SelectItem value="requested">درخواست شده</SelectItem>
+                        <SelectItem value="approved">تأیید شده</SelectItem>
+                        <SelectItem value="posted">ثبت شده</SelectItem>
+                        <SelectItem value="rejected">رد شده</SelectItem>
+                        <SelectItem value="void">باطل</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={trxItemId || ""} onValueChange={(val) => setTrxItemId(val === "__ALL_ITEMS__" ? "" : val)}>
+                      <SelectTrigger className="w-56">
+                        <SelectValue placeholder="کالا" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__ALL_ITEMS__">همه کالاها</SelectItem>
+                        {items.map(i => (
+                          <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={warehouseFilterId} onValueChange={(val) => { const v = val === "__ALL_WAREHOUSES__" ? "" : val; setWarehouseFilterId(v); setLocationFilterId("") }}>
+                      <SelectTrigger className="w-52">
+                        <SelectValue placeholder="انبار" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__ALL_WAREHOUSES__">همه انبارها</SelectItem>
+                        {warehouses.map(w => (
+                          <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={locationFilterId} onValueChange={(val) => setLocationFilterId(val === "__ALL_LOCATIONS__" ? "" : val)}>
+                      <SelectTrigger className="w-52">
+                        <SelectValue placeholder="مکان" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__ALL_LOCATIONS__">همه مکان‌ها</SelectItem>
+                        {locationsForWarehouseFilter.map(l => (
+                          <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button variant="outline" onClick={loadData} disabled={loading} className="w-full md:w-auto">
                     <RefreshCw className="h-4 w-4 ml-1" />
                     بروزرسانی
                   </Button>
-                  <Button onClick={() => setOpenTransactionDialog(true)}>
+                  <Button onClick={() => setOpenTransactionDialog(true)} className="w-full md:w-auto">
                     <Plus className="h-4 w-4 ml-1" />
                     ثبت تراکنش
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
+                {/* موبایل: نمایش کارت‌ها */}
+                <div className="grid gap-3 md:hidden">
+                  {filtered.map((t) => (
+                    <Card key={t.id}>
+                      <CardHeader className="flex items-center justify-between">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <span className="font-mono text-xs">{new Date(t.createdAt as any).toLocaleString("fa-IR")}</span>
+                          <span className="px-2 py-0.5 rounded bg-muted text-xs">{t.type}</span>
+                        </CardTitle>
+                        <span className="text-xs text-muted-foreground">{t.status}</span>
+                      </CardHeader>
+                      <CardContent className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span>کالا:</span>
+                          <span className="font-medium">{nameForItem(t.itemId)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>مقدار:</span>
+                          <span className="font-medium">{t.quantity} {t.unit || ""}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>مبدأ:</span>
+                          <span>{t.fromLocationId ? nameForLocation(t.fromLocationId) : "-"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>مقصد:</span>
+                          <span>{t.toLocationId ? nameForLocation(t.toLocationId) : "-"}</span>
+                        </div>
+                        {t.note && (
+                          <div className="text-muted-foreground line-clamp-2">{t.note}</div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                  {filtered.length === 0 && (
+                    <Card>
+                      <CardContent className="text-center text-muted-foreground">موردی یافت نشد</CardContent>
+                    </Card>
+                  )}
+                </div>
+                
+                {/* دسکتاپ: جدول با اسکرول افقی */}
+                <div className="overflow-x-auto hidden md:block">
+                  <Table className="min-w-[1000px]">
                     <TableHeader>
                       <TableRow>
                         <TableHead>تاریخ</TableHead>

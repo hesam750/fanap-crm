@@ -87,20 +87,20 @@ export default function InventoryLocationsPage() {
   return (
     <div className="space-y-6">
             <Card>
-              <CardHeader className="flex items-center justify-between">
+              <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
                 <CardTitle>مدیریت مکان‌ها</CardTitle>
-                <div className="flex items-center gap-2">
-                  <div className="relative w-64">
+                <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <div className="relative w-full sm:w-64">
                     <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       placeholder="جستجو نام/کد مکان"
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
-                      className="pl-8"
+                      className="w-full pl-8"
                     />
                   </div>
                   <Select value={warehouseFilterId} onValueChange={(val) => setWarehouseFilterId(val === "__ALL__" ? "" : val)}>
-                    <SelectTrigger className="w-52">
+                    <SelectTrigger className="w-full sm:w-52">
                       <SelectValue placeholder="انبار" />
                     </SelectTrigger>
                     <SelectContent>
@@ -110,12 +110,12 @@ export default function InventoryLocationsPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button variant="outline" onClick={loadData} disabled={loading}>
+                  <Button variant="outline" onClick={loadData} disabled={loading} className="w-full sm:w-auto">
                     <RefreshCw className="h-4 w-4 ml-1" />
                     بروزرسانی
                   </Button>
                   {canCreateLocation && (
-                    <Button onClick={() => setOpenCreateDialog(true)}>
+                    <Button onClick={() => setOpenCreateDialog(true)} className="w-full sm:w-auto">
                       <Plus className="h-4 w-4 ml-1" />
                       ایجاد مکان
                     </Button>
@@ -123,31 +123,63 @@ export default function InventoryLocationsPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>تاریخ ایجاد</TableHead>
-                      <TableHead>نام</TableHead>
-                      <TableHead>کد</TableHead>
-                      <TableHead>انبار</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filtered.map(l => (
-                      <TableRow key={l.id}>
-                        <TableCell>{new Date(l.createdAt as any).toLocaleString("fa-IR")}</TableCell>
-                        <TableCell>{l.name}</TableCell>
-                        <TableCell>{l.code || "-"}</TableCell>
-                        <TableCell>{nameForWarehouse(l.warehouseId)}</TableCell>
-                      </TableRow>
-                    ))}
-                    {filtered.length === 0 && (
+                {/* موبایل: نمایش کارت‌ها */}
+                <div className="sm:hidden space-y-3">
+                  {filtered.map(l => (
+                    <Card key={l.id}>
+                      <CardContent className="pt-4 space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-xs text-muted-foreground">تاریخ ایجاد</span>
+                          <span className="text-sm">{new Date(l.createdAt as any).toLocaleString("fa-IR")}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-xs text-muted-foreground">نام</span>
+                          <span className="text-sm">{l.name}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-xs text-muted-foreground">کد</span>
+                          <span className="text-sm">{l.code || "-"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-xs text-muted-foreground">انبار</span>
+                          <span className="text-sm">{nameForWarehouse(l.warehouseId)}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  {filtered.length === 0 && (
+                    <div className="text-center text-muted-foreground text-sm">موردی یافت نشد</div>
+                  )}
+                </div>
+                
+                {/* دسکتاپ: جدول با اسکرول افقی */}
+                <div className="hidden sm:block overflow-x-auto">
+                  <Table className="min-w-[640px]">
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={4} className="text-center text-muted-foreground">موردی یافت نشد</TableCell>
+                        <TableHead>تاریخ ایجاد</TableHead>
+                        <TableHead>نام</TableHead>
+                        <TableHead>کد</TableHead>
+                        <TableHead>انبار</TableHead>
                       </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {filtered.map(l => (
+                        <TableRow key={l.id}>
+                          <TableCell>{new Date(l.createdAt as any).toLocaleString("fa-IR")}</TableCell>
+                          <TableCell>{l.name}</TableCell>
+                          <TableCell>{l.code || "-"}</TableCell>
+                          <TableCell>{nameForWarehouse(l.warehouseId)}</TableCell>
+                        </TableRow>
+                      ))}
+                      {filtered.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-muted-foreground">موردی یافت نشد</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
 
@@ -156,7 +188,7 @@ export default function InventoryLocationsPage() {
                 <DialogHeader>
                   <DialogTitle>ایجاد مکان جدید</DialogTitle>
                 </DialogHeader>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label>انبار</Label>
                     <Select value={newLocation.warehouseId || ""} onValueChange={(val) => setNewLocation(v => ({ ...v, warehouseId: val }))}>
@@ -172,16 +204,16 @@ export default function InventoryLocationsPage() {
                   </div>
                   <div>
                     <Label>نام مکان</Label>
-                    <Input value={newLocation.name || ""} onChange={(e) => setNewLocation(v => ({ ...v, name: e.target.value }))} />
+                    <Input className="w-full" value={newLocation.name || ""} onChange={(e) => setNewLocation(v => ({ ...v, name: e.target.value }))} />
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-1 sm:col-span-2">
                     <Label>کد (اختیاری)</Label>
-                    <Input value={newLocation.code || ""} onChange={(e) => setNewLocation(v => ({ ...v, code: e.target.value }))} />
+                    <Input className="w-full" value={newLocation.code || ""} onChange={(e) => setNewLocation(v => ({ ...v, code: e.target.value }))} />
                   </div>
                 </div>
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setOpenCreateDialog(false)}>انصراف</Button>
-                  <Button onClick={handleCreate}>ایجاد مکان</Button>
+                <div className="flex flex-col sm:flex-row justify-end gap-2 mt-4">
+                  <Button variant="outline" onClick={() => setOpenCreateDialog(false)} className="w-full sm:w-auto">انصراف</Button>
+                  <Button onClick={handleCreate} className="w-full sm:w-auto">ایجاد مکان</Button>
                 </div>
               </DialogContent>
             </Dialog>

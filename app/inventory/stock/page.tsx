@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
 import { AlertTriangle, RefreshCw, Search } from "lucide-react"
+import { MobileFilterDrawer } from "@/components/inventory/mobile-filter-drawer"
 
 export default function InventoryStockPage() {
   const { toast } = useToast()
@@ -124,13 +125,23 @@ export default function InventoryStockPage() {
     return alerts
   }, [items, totalsByItem])
 
+  const activeFilterCount = useMemo(() => {
+    let c = 0
+    if (query.trim()) c++
+    if (warehouseId) c++
+    if (locationId) c++
+    if (categoryId) c++
+    if (itemId) c++
+    return c
+  }, [query, warehouseId, locationId, categoryId, itemId])
+
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="flex items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <CardTitle>مدیریت موجودی</CardTitle>
-          <div className="flex items-center gap-2">
-            <div className="relative w-40 sm:w-64">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="جستجو کالا/مکان/انبار"
@@ -139,54 +150,144 @@ export default function InventoryStockPage() {
                 className="pl-8"
               />
             </div>
-            <Select value={warehouseId} onValueChange={(val) => { const v = val === "__ALL_WAREHOUSES__" ? "" : val; setWarehouseId(v); setLocationId("") }}>
-              <SelectTrigger className="w-40 sm:w-52">
-                <SelectValue placeholder="فیلتر انبار" />
-              </SelectTrigger>
-              <SelectContent>
-                 <SelectItem value="__ALL_WAREHOUSES__">همه انبارها</SelectItem>
-                 {warehouses.map(w => (
-                   <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
-                 ))}
-               </SelectContent>
-            </Select>
-            <Select value={locationId} onValueChange={(val) => setLocationId(val === "__ALL_LOCATIONS__" ? "" : val)}>
-              <SelectTrigger className="w-40 sm:w-52">
-                <SelectValue placeholder="فیلتر مکان" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__ALL_LOCATIONS__">همه مکان‌ها</SelectItem>
-                {locations.map(l => (
-                  <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={categoryId} onValueChange={(val) => setCategoryId(val === "__ALL_CATEGORIES__" ? "" : val)}>
-              <SelectTrigger className="w-40 sm:w-52">
-                <SelectValue placeholder="فیلتر دسته" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__ALL_CATEGORIES__">همه دسته‌ها</SelectItem>
-                {categories.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={itemId} onValueChange={(val) => setItemId(val === "__ALL_ITEMS__" ? "" : val)}>
-              <SelectTrigger className="w-40 sm:w-52">
-                <SelectValue placeholder="انتخاب قلم" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__ALL_ITEMS__">همه اقلام</SelectItem>
-                {items.map(i => (
-                  <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* فیلترها: موبایل در دراور، دسکتاپ به‌صورت Inline */}
+            <div className="sm:hidden">
+              <MobileFilterDrawer title="فیلترهای موجودی" badgeCount={activeFilterCount} triggerClassName="w-full">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Select value={warehouseId} onValueChange={(val) => { const v = val === "__ALL_WAREHOUSES__" ? "" : val; setWarehouseId(v); setLocationId("") }}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="فیلتر انبار" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__ALL_WAREHOUSES__">همه انبارها</SelectItem>
+                      {warehouses.map(w => (
+                        <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={locationId} onValueChange={(val) => setLocationId(val === "__ALL_LOCATIONS__" ? "" : val)}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="فیلتر مکان" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__ALL_LOCATIONS__">همه مکان‌ها</SelectItem>
+                      {locations.map(l => (
+                        <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={categoryId} onValueChange={(val) => setCategoryId(val === "__ALL_CATEGORIES__" ? "" : val)}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="فیلتر دسته" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__ALL_CATEGORIES__">همه دسته‌ها</SelectItem>
+                      {categories.map(c => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={itemId} onValueChange={(val) => setItemId(val === "__ALL_ITEMS__" ? "" : val)}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="انتخاب قلم" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__ALL_ITEMS__">همه اقلام</SelectItem>
+                      {items.map(i => (
+                        <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </MobileFilterDrawer>
+            </div>
+            <div className="hidden sm:flex sm:flex-wrap sm:items-center gap-2">
+              <Select value={warehouseId} onValueChange={(val) => { const v = val === "__ALL_WAREHOUSES__" ? "" : val; setWarehouseId(v); setLocationId("") }}>
+                <SelectTrigger className="w-40 sm:w-52">
+                  <SelectValue placeholder="فیلتر انبار" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__ALL_WAREHOUSES__">همه انبارها</SelectItem>
+                  {warehouses.map(w => (
+                    <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={locationId} onValueChange={(val) => setLocationId(val === "__ALL_LOCATIONS__" ? "" : val)}>
+                <SelectTrigger className="w-40 sm:w-52">
+                  <SelectValue placeholder="فیلتر مکان" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__ALL_LOCATIONS__">همه مکان‌ها</SelectItem>
+                  {locations.map(l => (
+                    <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={categoryId} onValueChange={(val) => setCategoryId(val === "__ALL_CATEGORIES__" ? "" : val)}>
+                <SelectTrigger className="w-40 sm:w-52">
+                  <SelectValue placeholder="فیلتر دسته" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__ALL_CATEGORIES__">همه دسته‌ها</SelectItem>
+                  {categories.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={itemId} onValueChange={(val) => setItemId(val === "__ALL_ITEMS__" ? "" : val)}>
+                <SelectTrigger className="w-40 sm:w-52">
+                  <SelectValue placeholder="انتخاب قلم" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__ALL_ITEMS__">همه اقلام</SelectItem>
+                  {items.map(i => (
+                    <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          {/* موبایل: کارت‌ها */}
+          <div className="grid gap-3 md:hidden">
+            {filtered.map((s) => {
+              const loc = locations.find(l => l.id === s.locationId)
+              const whName = loc ? nameForWarehouse(loc.warehouseId) : "-"
+              const itm = itemsById.get(s.itemId)
+              const threshold = Math.max(
+                typeof itm?.minStock === "number" ? (itm?.minStock as number) : 0,
+                typeof itm?.reorderPoint === "number" ? (itm?.reorderPoint as number) : 0,
+              )
+              const qty = Number(s.quantity) || 0
+              const isLow = threshold > 0 && qty <= threshold
+              return (
+                <Card key={`${s.itemId}-${s.locationId}`} className="p-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="font-semibold">{nameForItem(s.itemId)}</div>
+                      <div className="text-xs text-muted-foreground">{nameForLocation(s.locationId)} • {whName}</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {isLow && <Badge variant="outline">کمتر از آستانه</Badge>}
+                    </div>
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                    <div>مقدار: <span className="font-medium">{qty.toLocaleString('fa-IR')}</span></div>
+                    <div>واحد: {s.unit}</div>
+                    <div className="col-span-2 text-xs text-muted-foreground">به‌روزرسانی: {(() => { const d = new Date(s.updatedAt as any); return isNaN(d.getTime()) ? 'نامشخص' : d.toLocaleString('fa-IR') })()}</div>
+                  </div>
+                </Card>
+              )
+            })}
+            {filtered.length === 0 && (
+              <div className="text-center text-muted-foreground py-8">موردی یافت نشد</div>
+            )}
+          </div>
+
+          {/* دسکتاپ: جدول */}
+          <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -199,20 +300,16 @@ export default function InventoryStockPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((s) => {
-                  const loc = locations.find(l => l.id === s.locationId)
-                  const whName = loc ? nameForWarehouse(loc.warehouseId) : "-"
-                  return (
-                    <TableRow key={`${s.itemId}-${s.locationId}`}>
-                      <TableCell>{nameForItem(s.itemId)}</TableCell>
-                      <TableCell>{nameForLocation(s.locationId)}</TableCell>
-                      <TableCell>{whName}</TableCell>
-                      <TableCell>{(Number(s.quantity) || 0).toLocaleString('fa-IR')}</TableCell>
-                      <TableCell className="hidden md:table-cell">{s.unit}</TableCell>
-                      <TableCell className="hidden lg:table-cell">{(() => { const d = new Date(s.updatedAt as any); return isNaN(d.getTime()) ? 'نامشخص' : d.toLocaleString('fa-IR') })()}</TableCell>
-                    </TableRow>
-                  )
-                })}
+                {filtered.map((s) => (
+                  <TableRow key={`${s.itemId}-${s.locationId}`}>
+                    <TableCell>{nameForItem(s.itemId)}</TableCell>
+                    <TableCell>{nameForLocation(s.locationId)}</TableCell>
+                    <TableCell>{(() => { const id = locationWarehouseMap.get(s.locationId); return id ? nameForWarehouse(id) : "-" })()}</TableCell>
+                    <TableCell>{(Number(s.quantity) || 0).toLocaleString('fa-IR')}</TableCell>
+                    <TableCell className="hidden md:table-cell">{s.unit}</TableCell>
+                    <TableCell className="hidden lg:table-cell">{(() => { const d = new Date(s.updatedAt as any); return isNaN(d.getTime()) ? 'نامشخص' : d.toLocaleString('fa-IR') })()}</TableCell>
+                  </TableRow>
+                ))}
                 {filtered.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center text-muted-foreground">موردی یافت نشد</TableCell>
@@ -232,7 +329,30 @@ export default function InventoryStockPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          {/* موبایل: کارت‌های هشدار */}
+          <div className="grid gap-3 md:hidden">
+            {lowStockItems.map(({ item, current, threshold }) => (
+              <Card key={item.id} className="p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-semibold">{item.name}</div>
+                    <div className="text-xs text-muted-foreground font-mono">{item.sku}</div>
+                  </div>
+                  <Badge variant="outline">کمتر از آستانه</Badge>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                  <div>موجودی کل: <span className="font-medium">{(Number(current) || 0).toLocaleString('fa-IR')}</span></div>
+                  <div>آستانه هشدار: {(Number(threshold) || 0).toLocaleString('fa-IR')}</div>
+                </div>
+              </Card>
+            ))}
+            {lowStockItems.length === 0 && (
+              <div className="text-center text-muted-foreground py-6">هشداری وجود ندارد</div>
+            )}
+          </div>
+
+          {/* دسکتاپ: جدول هشدار */}
+          <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

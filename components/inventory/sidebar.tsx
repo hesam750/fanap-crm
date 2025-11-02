@@ -22,6 +22,7 @@ import {
   X as CloseIcon,
 } from "lucide-react"
 import { DrawerClose } from "@/components/ui/drawer"
+import { BrandLogo } from "@/components/ui/brand-logo"
 
 const navigation = [
   { name: "داشبورد", href: "/inventory", icon: LayoutDashboard },
@@ -53,9 +54,7 @@ export function Sidebar({ variant = "desktop" }: { variant?: "mobile" | "desktop
       <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
         {!collapsed && (
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
-              <Warehouse className="h-5 w-5 text-sidebar-primary-foreground" />
-            </div>
+            <BrandLogo height={24} />
             <span className="text-lg font-semibold">قسمت انبارداری</span>
           </div>
         )}

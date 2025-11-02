@@ -190,10 +190,10 @@ export default function WarehousesPage() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="flex items-center justify-between">
+        <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <CardTitle>مدیریت انبارها</CardTitle>
-          <div className="flex items-center gap-2">
-            <div className="relative w-64">
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="relative w-full md:w-64">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="جستجو نام/کد/آدرس"
@@ -208,7 +208,7 @@ export default function WarehousesPage() {
               onValueChange={(v) => v && setView(v as any)}
               variant="outline"
               size="sm"
-              className="mr-2"
+              className="hidden md:flex mr-2"
             >
               <ToggleGroupItem value="table">
                 <List className="h-4 w-4 ml-1" /> جدول
@@ -217,7 +217,7 @@ export default function WarehousesPage() {
                 <LayoutGrid className="h-4 w-4 ml-1" /> کارت‌ها
               </ToggleGroupItem>
             </ToggleGroup>
-            <Button onClick={() => setOpenCreate(true)} disabled={loading || !canEdit}>
+            <Button className="w-full md:w-auto" onClick={() => setOpenCreate(true)} disabled={loading || !canEdit}>
               <Plus className="h-4 w-4 ml-1" /> افزودن انبار
             </Button>
           </div>

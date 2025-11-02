@@ -155,50 +155,84 @@ export default function InventoryItemsPage() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="flex items-center justify-between">
+        <CardHeader className="flex items-center justify-between gap-2 flex-col sm:flex-row">
           <CardTitle>مدیریت اقلام</CardTitle>
           <Button onClick={() => setOpenCreate(true)} disabled={loading || !canEdit}>افزودن قلم</Button>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>SKU</TableHead>
-                <TableHead>نام</TableHead>
-                <TableHead>دسته</TableHead>
-                <TableHead>واحد</TableHead>
-                <TableHead>حداقل/نقطه سفارش</TableHead>
-                <TableHead>سریالی</TableHead>
-                <TableHead>فعال</TableHead>
-                <TableHead>عملیات</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((it) => (
-                <TableRow key={it.id}>
-                  <TableCell className="font-mono text-xs">{it.sku}</TableCell>
-                  <TableCell>{it.name}</TableCell>
-                  <TableCell>{categories.find((c) => c.id === it.categoryId)?.name || "-"}</TableCell>
-                  <TableCell>{it.unit}</TableCell>
-                  <TableCell>{it.minStock ?? "-"}/{it.reorderPoint ?? "-"}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{it.serializable ? "بله" : "-"}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={it.isActive ? "default" : "secondary"}>{it.isActive ? "فعال" : "غیرفعال"}</Badge>
-                  </TableCell>
-                  <TableCell className="space-x-2 rtl:space-x-reverse">
-                    <Button size="sm" variant="outline" disabled={!canEdit} onClick={() => openEditDialog(it)}>
-                      <Pencil className="h-4 w-4 ml-1" /> ویرایش
-                    </Button>
-                    <Button size="sm" variant="destructive" disabled={!canEdit} onClick={() => handleDelete(it)}>
-                      <Trash2 className="h-4 w-4 ml-1" /> حذف
-                    </Button>
-                  </TableCell>
+          <div className="hidden md:block overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>SKU</TableHead>
+                  <TableHead>نام</TableHead>
+                  <TableHead>دسته</TableHead>
+                  <TableHead>واحد</TableHead>
+                  <TableHead>حداقل/نقطه سفارش</TableHead>
+                  <TableHead>سریالی</TableHead>
+                  <TableHead>فعال</TableHead>
+                  <TableHead>عملیات</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {items.map((it) => (
+                  <TableRow key={it.id}>
+                    <TableCell className="font-mono text-xs">{it.sku}</TableCell>
+                    <TableCell>{it.name}</TableCell>
+                    <TableCell>{categories.find((c) => c.id === it.categoryId)?.name || "-"}</TableCell>
+                    <TableCell>{it.unit}</TableCell>
+                    <TableCell>{it.minStock ?? "-"}/{it.reorderPoint ?? "-"}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{it.serializable ? "بله" : "-"}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={it.isActive ? "default" : "secondary"}>{it.isActive ? "فعال" : "غیرفعال"}</Badge>
+                    </TableCell>
+                    <TableCell className="space-x-2 rtl:space-x-reverse">
+                      <Button size="sm" variant="outline" disabled={!canEdit} onClick={() => openEditDialog(it)}>
+                        <Pencil className="h-4 w-4 ml-1" /> ویرایش
+                      </Button>
+                      <Button size="sm" variant="destructive" disabled={!canEdit} onClick={() => handleDelete(it)}>
+                        <Trash2 className="h-4 w-4 ml-1" /> حذف
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="md:hidden space-y-3">
+            {items.map((it) => (
+              <Card key={it.id} className="p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-semibold">{it.name}</div>
+                    <div className="text-xs text-muted-foreground font-mono">{it.sku}</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={it.isActive ? "default" : "secondary"}>{it.isActive ? "فعال" : "غیرفعال"}</Badge>
+                    {it.serializable && <Badge variant="outline">سریالی</Badge>}
+                  </div>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                  <div>دسته: {categories.find((c) => c.id === it.categoryId)?.name || "-"}</div>
+                  <div>واحد: {it.unit}</div>
+                  <div>حداقل/نقطه: {it.minStock ?? "-"} / {it.reorderPoint ?? "-"}</div>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <Button size="sm" className="flex-1 sm:flex-none" variant="outline" disabled={!canEdit} onClick={() => openEditDialog(it)}>
+                    <Pencil className="h-4 w-4 ml-1" /> ویرایش
+                  </Button>
+                  <Button size="sm" className="flex-1 sm:flex-none" variant="destructive" disabled={!canEdit} onClick={() => handleDelete(it)}>
+                    <Trash2 className="h-4 w-4 ml-1" /> حذف
+                  </Button>
+                </div>
+              </Card>
+            ))}
+            {items.length === 0 && (
+              <div className="text-center text-muted-foreground py-8">داده‌ای نیست</div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -208,7 +242,7 @@ export default function InventoryItemsPage() {
           <DialogHeader>
             <DialogTitle>افزودن قلم</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>SKU</Label>
               <Input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} />
@@ -264,7 +298,7 @@ export default function InventoryItemsPage() {
           <DialogHeader>
             <DialogTitle>ویرایش قلم</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>SKU</Label>
               <Input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} />

@@ -2,12 +2,13 @@
 
 
 import { useEffect, useMemo, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Package, Warehouse, TrendingUp, AlertTriangle, ArrowUpRight, ArrowDownRight, Clock } from "lucide-react"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LineChart, Line, AreaChart, Area, Legend } from "recharts"
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 
 import { StatCard } from "@/components/inventory/stat-card"
 import { apiClient } from "@/lib/api-client"
@@ -249,109 +250,163 @@ export default function DashboardPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>تحلیل ورود و خروج</CardTitle>
+                  <CardDescription className="text-xs">نمایش مجموع ورود و خروج ماهانه با رنگ‌بندی خوانا در تم روشن/تاریک</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
+                  <ChartContainer
+                    className="h-[300px]"
+                    config={{
+                      in: { label: "ورود", theme: { light: "#3b82f6", dark: "#60a5fa" } },
+                      out: { label: "خروج", theme: { light: "#f97316", dark: "#fb923c" } },
+                    }}
+                  >
                     <BarChart data={stockBarData}>
+                      <defs>
+                        <linearGradient id="inGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="var(--color-in)" stopOpacity={0.9} />
+                          <stop offset="100%" stopColor="var(--color-in)" stopOpacity={0.25} />
+                        </linearGradient>
+                        <linearGradient id="outGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="var(--color-out)" stopOpacity={0.9} />
+                          <stop offset="100%" stopColor="var(--color-out)" stopOpacity={0.25} />
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis dataKey="month" className="text-xs" />
-                      <YAxis className="text-xs" />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "hsl(var(--card))",
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: "8px",
-                        }}
-                      />
-                      <Bar dataKey="in" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="out" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
+                      <XAxis dataKey="month" className="text-xs" tickMargin={8} />
+                      <YAxis className="text-xs" tickMargin={8} tickFormatter={(v) => (Number(v) || 0).toLocaleString('fa-IR')} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Legend wrapperStyle={{ direction: 'rtl' }} />
+                      <Bar dataKey="in" fill="url(#inGradient)" radius={[6, 6, 0, 0]} />
+                      <Bar dataKey="out" fill="url(#outGradient)" radius={[6, 6, 0, 0]} />
                     </BarChart>
-                  </ResponsiveContainer>
+                  </ChartContainer>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
                   <CardTitle>روند هفتگی تراکنش‌ها</CardTitle>
+                  <CardDescription className="text-xs">نمایش تعداد تراکنش روزانه با ناحیهٔ گرادیانی و Tooltip هماهنگ با تم</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={trendData}>
+                  <ChartContainer
+                    className="h-[300px]"
+                    config={{
+                      value: { label: "تعداد تراکنش", theme: { light: "#22c55e", dark: "#86efac" } },
+                    }}
+                  >
+                    <AreaChart data={trendData}>
+                      <defs>
+                        <linearGradient id="valueGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="var(--color-value)" stopOpacity={0.35} />
+                          <stop offset="100%" stopColor="var(--color-value)" stopOpacity={0.05} />
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis dataKey="day" className="text-xs" />
-                      <YAxis className="text-xs" />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "hsl(var(--card))",
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: "8px",
-                        }}
-                      />
-                      <Line
+                      <XAxis dataKey="day" className="text-xs" tickMargin={8} />
+                      <YAxis className="text-xs" tickMargin={8} tickFormatter={(v) => (Number(v) || 0).toLocaleString('fa-IR')} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Area
                         type="monotone"
                         dataKey="value"
-                        stroke="hsl(var(--primary))"
+                        stroke="var(--color-value)"
                         strokeWidth={2}
-                        dot={{ fill: "hsl(var(--primary))" }}
+                        fill="url(#valueGradient)"
+                        dot={{ r: 2.5, strokeWidth: 1, stroke: "var(--color-value)", fill: "var(--color-value)" }}
+                        activeDot={{ r: 4 }}
                       />
-                    </LineChart>
-                  </ResponsiveContainer>
+                    </AreaChart>
+                  </ChartContainer>
                 </CardContent>
               </Card>
             </div>
 
             {/* Recent Transactions */}
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <CardTitle>تراکنش‌های اخیر</CardTitle>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="w-full md:w-auto">
                   مشاهده همه
                   <ArrowUpRight className="mr-2 h-4 w-4" />
                 </Button>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                     <TableHeader>
-                       <TableRow>
-                         <TableHead className="hidden md:table-cell">شناسه</TableHead>
-                         <TableHead>نوع</TableHead>
-                         <TableHead>قلم</TableHead>
-                         <TableHead>مقدار</TableHead>
-                         <TableHead className="hidden lg:table-cell">انبار</TableHead>
-                         <TableHead>زمان</TableHead>
-                         <TableHead>وضعیت</TableHead>
-                       </TableRow>
-                     </TableHeader>
-                     <TableBody>
-                       {recentTransactionsView.map((trx) => (
-                         <TableRow key={trx.id}>
-                           <TableCell className="hidden md:table-cell font-mono text-xs">{trx.id}</TableCell>
-                           <TableCell>
-                             <Badge variant="outline" className="gap-1">
-                               {trx.type === "ورود" && <ArrowDownRight className="h-3 w-3" />}
-                               {trx.type === "خروج" && <ArrowUpRight className="h-3 w-3" />}
-                               {trx.type}
-                             </Badge>
-                           </TableCell>
-                           <TableCell>{trx.item}</TableCell>
-                           <TableCell>{trx.quantity.toLocaleString('fa-IR')}</TableCell>
-                           <TableCell className="hidden lg:table-cell">{trx.warehouse}</TableCell>
-                           <TableCell className="text-muted-foreground">
-                             <div className="flex items-center gap-1">
-                               <Clock className="h-3 w-3" />
-                               {trx.time}
-                             </div>
-                           </TableCell>
-                           <TableCell>
-                             <Badge variant={trx.status === "تکمیل" ? "default" : "secondary"}>{trx.status}</Badge>
-                           </TableCell>
-                         </TableRow>
-                       ))}
-                     </TableBody>
-                   </Table>
-                 </div>
-               </CardContent>
+                {/* موبایل: نمایش کارت‌ها */}
+                <div className="grid gap-3 md:hidden">
+                  {recentTransactionsView.map((trx) => (
+                    <Card key={trx.id}>
+                      <CardHeader className="flex flex-row items-center justify-between">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <Badge variant="outline" className="gap-1">
+                            {trx.type === "ورود" && <ArrowDownRight className="h-3 w-3" />}
+                            {trx.type === "خروج" && <ArrowUpRight className="h-3 w-3" />}
+                            {trx.type}
+                          </Badge>
+                          <span>{trx.item}</span>
+                        </CardTitle>
+                        <Badge>{trx.status}</Badge>
+                      </CardHeader>
+                      <CardContent className="space-y-2 text-sm text-muted-foreground">
+                        <div className="flex justify-between">
+                          <span>مقدار:</span>
+                          <span className="font-medium text-foreground">{trx.quantity.toLocaleString('fa-IR')}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>انبار:</span>
+                          <span>{trx.warehouse}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {trx.time}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                {/* دسکتاپ: نمایش جدول با اسکرول افقی */}
+                <div className="overflow-x-auto hidden md:block">
+                  <Table className="min-w-[800px]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="hidden md:table-cell">شناسه</TableHead>
+                        <TableHead>نوع</TableHead>
+                        <TableHead>قلم</TableHead>
+                        <TableHead>مقدار</TableHead>
+                        <TableHead className="hidden lg:table-cell">انبار</TableHead>
+                        <TableHead>زمان</TableHead>
+                        <TableHead>وضعیت</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {recentTransactionsView.map((trx) => (
+                        <TableRow key={trx.id}>
+                          <TableCell className="hidden md:table-cell font-mono text-xs">{trx.id}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="gap-1">
+                              {trx.type === "ورود" && <ArrowDownRight className="h-3 w-3" />}
+                              {trx.type === "خروج" && <ArrowUpRight className="h-3 w-3" />}
+                              {trx.type}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{trx.item}</TableCell>
+                          <TableCell>{trx.quantity.toLocaleString('fa-IR')}</TableCell>
+                          <TableCell className="hidden lg:table-cell">{trx.warehouse}</TableCell>
+                          <TableCell className="text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {trx.time}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={trx.status === "تکمیل" ? "default" : "secondary"}>{trx.status}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
             </Card>
 
             {/* Low Stock Alert */}
@@ -363,8 +418,37 @@ export default function DashboardPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
+                {/* موبایل: کارت‌ها */}
+                <div className="grid gap-3 md:hidden">
+                  {lowStockList.map((item) => (
+                    <Card key={item.sku}>
+                      <CardHeader className="flex flex-row items-center justify-between">
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <span className="font-mono text-xs">{item.sku}</span>
+                          <span className="font-medium">{item.name}</span>
+                        </CardTitle>
+                        <Badge variant="secondary">حداقل: {item.min.toLocaleString('fa-IR')}</Badge>
+                      </CardHeader>
+                      <CardContent className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span>موجودی فعلی:</span>
+                          <span className="text-warning font-semibold">{item.current.toLocaleString('fa-IR')}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>انبار:</span>
+                          <span>{item.warehouse}</span>
+                        </div>
+                        <div>
+                          <Button size="sm" variant="outline" className="w-full">ثبت درخواست خرید</Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                {/* دسکتاپ: جدول با اسکرول افقی */}
+                <div className="overflow-x-auto hidden md:block">
+                  <Table className="min-w-[800px]">
                     <TableHeader>
                       <TableRow>
                         <TableHead>SKU</TableHead>

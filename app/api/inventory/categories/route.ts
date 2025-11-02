@@ -3,7 +3,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/database'
 import { validateAuth } from '@/lib/auth-middleware'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const devBypass = process.env.NODE_ENV !== 'production'
+  const user = devBypass ? null : await validateAuth(request)
+  if (!devBypass && !user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  if (!devBypass && user && !['root','manager','supervisor','operator'].includes(user.role)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
   try {
     const categories = await db.getInventoryCategories()
     return NextResponse.json({ categories })
