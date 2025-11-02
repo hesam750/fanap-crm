@@ -340,13 +340,20 @@ export function UserManagementPanel() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="flex items-center space-x-2 space-x-reverse">
-                    <Switch
-                      id="isActive"
-                      checked={newUser.isActive}
-                      onCheckedChange={(checked) => setNewUser({ ...newUser, isActive: checked })}
-                    />
-                    <Label htmlFor="isActive">کاربر فعال</Label>
+                  <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+                    <Label htmlFor="isActive" className="text-sm font-medium">
+                      وضعیت کاربر
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm ${newUser.isActive ? 'text-green-600' : 'text-gray-500'}`}>
+                        {newUser.isActive ? 'فعال' : 'غیرفعال'}
+                      </span>
+                      <Switch
+                        id="isActive"
+                        checked={newUser.isActive}
+                        onCheckedChange={(checked) => setNewUser({ ...newUser, isActive: checked })}
+                      />
+                    </div>
                   </div>
                   <div className="flex gap-2 pt-4">
                     <Button onClick={handleCreateUser} className="flex-1">
@@ -382,16 +389,20 @@ export function UserManagementPanel() {
                     <Badge variant={getRoleBadgeVariant(user.role)}>{getRoleDisplayName(user.role)}</Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
+                    <Badge 
+                      variant={user.isActive ? "default" : "secondary"}
+                      className={`${user.isActive 
+                        ? "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800" 
+                        : "bg-gray-100 text-gray-600 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700"
+                      } flex items-center gap-1`}
+                    >
                       {user.isActive ? (
-                        <Eye className="h-4 w-4 text-green-500" />
+                        <Eye className="h-3 w-3" />
                       ) : (
-                        <EyeOff className="h-4 w-4 text-gray-400" />
+                        <EyeOff className="h-3 w-3" />
                       )}
-                      <span className={user.isActive ? "text-green-600" : "text-gray-400"}>
-                        {user.isActive ? "فعال" : "غیرفعال"}
-                      </span>
-                    </div>
+                      {user.isActive ? "فعال" : "غیرفعال"}
+                    </Badge>
                   </TableCell>
                   {/* <TableCell>
                     {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString("fa-IR") : "هرگز"}
@@ -465,13 +476,20 @@ export function UserManagementPanel() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-center space-x-2 space-x-reverse">
-              <Switch
-                id="edit-isActive"
-                checked={editUserData.isActive}
-                onCheckedChange={(checked) => setEditUserData({ ...editUserData, isActive: checked })}
-              />
-              <Label htmlFor="edit-isActive">کاربر فعال</Label>
+            <div className="flex items-center justify-between p-3 border rounded-lg bg-muted/30">
+              <Label htmlFor="edit-isActive" className="text-sm font-medium">
+                وضعیت کاربر
+              </Label>
+              <div className="flex items-center gap-2">
+                <span className={`text-sm ${editUserData.isActive ? 'text-green-600' : 'text-gray-500'}`}>
+                  {editUserData.isActive ? 'فعال' : 'غیرفعال'}
+                </span>
+                <Switch
+                  id="edit-isActive"
+                  checked={editUserData.isActive}
+                  onCheckedChange={(checked) => setEditUserData({ ...editUserData, isActive: checked })}
+                />
+              </div>
             </div>
             <div className="flex gap-2 pt-4">
               <Button onClick={handleUpdateUser} className="flex-1">
