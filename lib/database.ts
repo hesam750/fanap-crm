@@ -6,8 +6,34 @@ import { PrismaClient, Prisma } from '@prisma/client'
 import type { User, Tank, Generator, HistoryRecord, WeeklyTask, PrismaHistoricalData, PrismaGetDataSummary, PrismaTank, PrismaGenerator, Notification, InventoryItem, InventoryCategory, Warehouse, Location, Supplier, InventoryTransactionType, InventoryTransactionStatus, StockTransaction, StockLevel } from './types'
 
 // Initialize Prisma client (serverless-safe singleton)
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
-const prisma = globalForPrisma.prisma ?? new PrismaClient()
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient; prismaDbUrl?: string }
+
+function resolvePrisma(): PrismaClient {
+  const currentUrl = process.env.DATABASE_URL
+  // If we have a DATABASE_URL, ensure the client matches it
+  if (currentUrl) {
+    if (!globalForPrisma.prisma || globalForPrisma.prismaDbUrl !== currentUrl) {
+      try {
+        if (globalForPrisma.prisma) {
+          // Disconnect previous client before reinitializing
+          void globalForPrisma.prisma.$disconnect()
+        }
+      } catch (_) {}
+      globalForPrisma.prisma = new PrismaClient({ datasources: { db: { url: currentUrl } } })
+      globalForPrisma.prismaDbUrl = currentUrl
+    }
+    return globalForPrisma.prisma!
+  }
+  // Fallback to default initialization when env isn't provided
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = new PrismaClient()
+  }
+  return globalForPrisma.prisma!
+}
+
+// Keep an exported immutable reference for modules that rely on it,
+// but dynamic calls should use resolvePrisma() to reflect env changes
+const prisma = resolvePrisma()
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
 // Database service class
@@ -285,8 +311,25 @@ export class DatabaseService {
 
   async getUserWithPassword(email: string): Promise<any | null> {
     try {
-      const user = await prisma.user.findUnique({
-        where: { email }
+      if (process.env.DATABASE_URL) {
+        const masked = process.env.DATABASE_URL.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@')
+        console.log('[Database] Using DATABASE_URL:', masked)
+      } else {
+        console.log('[Database] No DATABASE_URL in process.env')
+      }
+      const client = resolvePrisma()
+      const user = await client.user.findUnique({
+        where: { email },
+        select: {
+          id: true,
+          email: true,
+          password: true,
+          role: true,
+          isActive: true,
+          name: true,
+          createdAt: true,
+          updatedAt: true
+        }
       })
       return user
     } catch (error) {

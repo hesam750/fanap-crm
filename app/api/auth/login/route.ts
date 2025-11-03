@@ -15,12 +15,15 @@ export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json()
 
+    console.log('[Auth/Login] Request received', { email })
+
     if (!email || !password) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 })
     }
 
    
     const userRow = await db.getUserWithPassword(email)
+    console.log('[Auth/Login] Fetched user', userRow ? { id: userRow.id, email: userRow.email, isActive: userRow.isActive } : null)
 
     if (!userRow) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
@@ -28,6 +31,7 @@ export async function POST(request: NextRequest) {
 
     
     const isValidPassword = await bcrypt.compare(password, userRow.password)
+    console.log('[Auth/Login] Password compare result', isValidPassword)
     if (!isValidPassword) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 })
     }
