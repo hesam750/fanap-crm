@@ -20,17 +20,5 @@
       "runtime": "nodejs20.x",
       "maxDuration": 60
     }
-  },
-  "env": {
-    "DATABASE_URL": "@database-url",
-    "DIRECT_URL": "@direct-url",
-    "JWT_SECRET": "@jwt-secret"
-  },
-  "build": {
-    "env": {
-      "DATABASE_URL": "@database-url",
-      "DIRECT_URL": "@direct-url",
-      "JWT_SECRET": "@jwt-secret"
-    }
   }
 }
