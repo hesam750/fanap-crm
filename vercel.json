@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "framework": "nextjs",
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build",
+  "git": {
+    "deploymentEnabled": true
+  },
+  "github": {
+    "enabled": true,
+    "autoJobCancelation": true,
+    "silent": true
+  },
+  "functions": {
+    "app/api/**/route.js": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 60
+    },
+    "app/api/**/route.ts": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 60
+    }
+  },
+  "env": {
+    "DATABASE_URL": "@database-url",
+    "DIRECT_URL": "@direct-url",
+    "JWT_SECRET": "@jwt-secret"
+  },
+  "build": {
+    "env": {
+      "DATABASE_URL": "@database-url",
+      "DIRECT_URL": "@direct-url",
+      "JWT_SECRET": "@jwt-secret"
+    }
+  }
+}

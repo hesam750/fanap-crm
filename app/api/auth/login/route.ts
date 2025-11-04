@@ -3,6 +3,8 @@ import { db } from "@/lib/database"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 
+export const runtime = "nodejs"
+
 function getJwtSecret() {
   const secret = process.env.JWT_SECRET
   if (!secret && process.env.NODE_ENV === 'production') {
