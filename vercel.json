@@ -1,24 +1,3 @@
 {
-  "version": 2,
-  "framework": "nextjs",
-  "installCommand": "npm ci",
-  "buildCommand": "npm run build",
-  "git": {
-    "deploymentEnabled": true
-  },
-  "github": {
-    "enabled": true,
-    "autoJobCancelation": true,
-    "silent": true
-  },
-  "functions": {
-    "app/api/**/route.js": {
-      "runtime": "nodejs20.x",
-      "maxDuration": 60
-    },
-    "app/api/**/route.ts": {
-      "runtime": "nodejs20.x",
-      "maxDuration": 60
-    }
-  }
+  "version": 2
 }
